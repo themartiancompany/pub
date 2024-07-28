@@ -247,7 +247,7 @@ _pub() {
 # from arch-grub command line option parameters
 _set_overrides() {
   _set_override \
-    "packaging" \
+    "publishing" \
     "date" \
     "$(_get_date_human)"
    _set_override \
@@ -311,7 +311,7 @@ ENDUSAGETEXT
 # Shows configuration options.
 _show_config() {
   _msg_info "${app_name} configuration"
-  _msg_info "           Packaging date:   $(_get "packaging" "date")"
+  _msg_info "           Publishing date:  $(_get "publishing" "date")"
   _msg_info "              Repo origin:   $(_get "repo" "dir")"
   _msg_info "           Repo directory:   $(_get "repo" "origin")"
   _msg_info "                 Packages:   $(_get "local" "packages")"

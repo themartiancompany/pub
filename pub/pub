@@ -22,7 +22,7 @@ _requirements() {
 
 # shellcheck disable=SC2034
 _global_variables() {
-  packaging_date=()
+  publishing_date=()
   local_packages=()
   repo_dir=""
   repo_origin=""
@@ -157,7 +157,8 @@ _build_repo() {
 _pub() {
   local \
     _output_dir="${1}" \
-    _origin="${2}" \
+    _repo="${2}" \
+    _origin="${3}" \
     _packages=() \
     _pkgs=() \
     _pacman_opts=() \
@@ -165,7 +166,7 @@ _pub() {
     _opts=() \
     _pkg
   shift \
-    2
+    3
   _packages=(
     "$@"
   )
@@ -189,16 +190,16 @@ _pub() {
     )
     cd \
       "${_repo}"
-    aspe \
-        "${_opts[@]}" \
-        "${_pkg}"
+    # aspe \
+    #     "${_opts[@]}" \
+    #     "${_pkg}"
     _pkgs=(
       $( \
         find \
           . \
           -iname \
 	    '*.pkg.*' \
-	  -exec echo ${_repo}/{} ';')
+	  -exec echo ${_repo}/${_pkg}/{} ';')
     )
     _msg_info \
       "found ${_pkgs[*]}"
@@ -208,7 +209,7 @@ _pub() {
           . \
           -iname \
 	    '*.sig' \
-	  -exec echo ${_repo}/{} ';')
+	  -exec echo ${_repo}/${_pkg}/{} ';')
     )
     _msg_info \
       "removing signatures ${_sigs[*]}"
@@ -228,16 +229,16 @@ _pub() {
       "moving ${_pkgs[*]}"
     mv \
       "${_pkgs[@]}" \
-      .
+      "$(_get_platform)/${_arch}"
     _pkgs=(
       $(ls \
 	  *".pkg."*)
     )
     _msg_info \
       "installing ${_pkgs[*]}"
-    pacman \
-      "${_pacman_opts[@]}" \
-      "${_pkgs[@]}"
+    # pacman \
+    #   "${_pacman_opts[@]}" \
+    #   "${_pkgs[@]}"
   done
   cd \
     "${OLDPWD}"
@@ -257,7 +258,11 @@ _set_overrides() {
    _set_override \
     "repo" \
     "origin" \
-    "ur"
+    "lur"
+   _set_override \
+    "pub" \
+    "platform" \
+    "fur"
    _set_override \
     "output" \
     "dir" \

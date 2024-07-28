@@ -171,7 +171,7 @@ _pub() {
     "$@"
   )
   _msg_info \
-    "installing ${_packages[*]}"
+    "publishing ${_packages[*]}"
   _pacman_opts+=(
     -U
     --noconfirm
@@ -261,7 +261,7 @@ _set_overrides() {
     "lur"
    _set_override \
     "pub" \
-    "platform" \
+    "plat" \
     "fur"
    _set_override \
     "output" \

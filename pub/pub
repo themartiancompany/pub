@@ -269,6 +269,7 @@ _fur_pub() {
       "entering ${_pub_repo}/${_pub}"
     cd \
       "${_pub_repo}/${_pub}"
+    git add .
     git \
       add \
         "${_package_dir}"

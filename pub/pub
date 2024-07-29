@@ -324,12 +324,115 @@ _fur_get() {
     "${_oldpwd}"
 }
 
+_fur_sign() {
+ local \
+    _dir="${1}" \
+    _oldpwd
+ _old_pwd="$( \
+  pwd)"
+  cd \
+    "${_dir}"
+  gpg \
+    --sign \
+    --detach \
+    *".pkg.tar.xz"
+  cd \
+    "${_oldpwd}"
+}
+
 _fur_pub() {
   local \
-    _dir="${1}"
+    _dir="${1}" \
+    _pkg="${2}" \
+    _packages=() \
+    _package \
+    _oldpwd
+  shift \
+    2
+  _packages+=(
+    "$@")
+  for _package \
+    in "${_packages[@]}"; do
+    _msg_info \
+      "publishing package: ${_package}" 
+    _oldpwd="$( \
+      pwd)"
+    _arch="$( \
+      _get_arch \
+        "${_package}")"
+    _package_dir="$( \
+      _get_platform)/${_arch}"
+    _msg=(
+      "publishing origin ${_origin} directory ${_dir}"
+      "in ${_pub} directory '${_dir}/${_package_dir}'"
+    )
+    _msg_info \
+      "${_msg[*]}"
+  mkdir \
+    -p \
+    "${_dir}/${_pub}/${_package_dir}"
+  rsync \
+    -v \
+    "${_packages[@]}" \
+    "${_dir}/${_pub}/${_package_dir}"
+  "_${_pub}_sign"
   _msg_info \
-    "publishing directory ${_dir} on fur"
+    "entering ${_pub_repo}/${_pub}"
+  cd \
+    "${_pub_repo}/${_pub}"
+  tree \
+    .
+  git \
+    add \
+      .
 
+      "_${_pub}_pub" \
+	"${_pub_repo}"
+      git \
+	add \
+	.
+    done
+    git \
+      commit \
+        -a \
+        -S \
+        -m "publish"
+      git \
+	remote \
+	 add \
+	   tmc \
+	   "github:themartiancompany/${_pub}"
+      git \
+	push \
+	tmc \
+	"${_pkg}"
+
+  _oldpwd="$( \
+    pwd)"
+  _arch="$( \
+    _get_arch \
+      "${_package}")"
+  _package_dir="$( \
+    _get_platform)/${_arch}"
+  _msg_info \
+    "publishing origin ${_origin} directory ${_dir} in ${_pub} directory '${_dir}/${_package_dir}'"
+  mkdir \
+    -p \
+    "${_dir}/${_pub}/${_package_dir}"
+  rsync \
+    -v \
+    "${_src_pkgs[@]}" \
+    "${_dir}/${_pub}/${_package_dir}"
+  "_${_pub}_sign"
+  _msg_info \
+    "entering ${_pub_repo}/${_pub}"
+  cd \
+    "${_pub_repo}/${_pub}"
+  tree \
+    .
+  git \
+    add \
+      .
 }
 
 # $@: packages
@@ -362,15 +465,10 @@ _pub() {
     _pub_repo="$( \
       mktemp \
         -d)"
-#     _opts=(
-#       "${_pub_opts[@]}"
-#     )
     "_${_origin}_get" \
       "${_repo}" || \
       echo \
-       "hi"
-    _msg_info \
-      "publishing packages ${_src_pkgs[*]}"
+       "no get function for ${_origin}"
     _get_opts=()
     "_${_pub}_get" \
       "${_pub_repo}" || \
@@ -383,34 +481,15 @@ _pub() {
 	"publishing package: ${_package}" 
       "_${_pub}_pub" \
 	"${_pub_repo}"
-      _arch="$( \
-        _get_arch \
-	  "${_package}")"
-      _package_dir="$( \
-        _get_platform)/${_arch}"
-      _msg_info \
-	"publishing into '${_pub_repo}/${_package_dir}'"
-      mkdir \
-	-p \
-	"${_pub_repo}/${_pub}/${_package_dir}"
-      rsync -v \
-        "${_src_pkgs[@]}" \
-        "${_pub_repo}/${_pub}/${_package_dir}"
-      find \
-        "${_pub_repo}/${_pub}/${_package_dir}"
-      _msg_info \
-        "entering ${_pub_repo}/${_pub}"
-      cd \
-        "${_pub_repo}/${_pub}"
-      tree .
       git \
 	add \
-        "${_package_dir}"
-      git \
-	commit \
-	-a \
-	-S \
-	-m "publish"
+	.
+    done
+    git \
+      commit \
+        -a \
+        -S \
+        -m "publish"
       git \
 	remote \
 	 add \
@@ -418,8 +497,8 @@ _pub() {
 	   "github:themartiancompany/${_pub}"
       git \
 	push \
-	tmc
-    done
+	tmc \
+	"${_pkg}"
    #  _pkgs=(
    #    $(ls \
    #        *".pkg."*)

@@ -185,6 +185,21 @@ _fur_get_opts(){
   )
 }
 
+_lur_get_opts() {
+  local \
+    _lur_opts=()
+  _get_cmd="lur"
+  _lur_opts=(
+    -d
+    -o
+      "${_dir}"
+    -n
+  )
+  _get_opts+=(
+    "${_lur_opts[@]}"
+  )
+}
+
 _ur_get_opts(){
   local \
     _aspe_opts=()
@@ -202,34 +217,15 @@ _lur_get() {
   local \
     _dir="${1}" \
    _oldpwd
+  _msg_info \
+    "running lur ${_pkg}"
   _oldpwd="$( \
     pwd)"
   cd \
     "${_dir}"
   "_lur_get_opts"
-  _src_pkgs=(
-    $( \
-      find \
-        . \
-        -iname \
-	  '*.pkg.*' \
-	-exec \
-	  echo \
-	    ${_dir}/{} ';')
-    )
-  cd \
-    "${_oldpwd}"
-}
-
-_fur_get() {
-  local \
-   _dir="${1}" \
-   _oldpwd
-  _oldpwd="$( \
-    _pwd)"
-  cd \
-    "${_dir}"
-  "_fur_get_opts"
+  _msg_info \
+     "Debug"
   if [[ "${quiet}" != "y" ]]; then
     _get_opts+=(
       -v
@@ -241,20 +237,58 @@ _fur_get() {
   "${_get_cmd}" \
       "${_get_opts[@]}" \
       "${_pub}"
+  _src_pkgs=(
+    $( \
+      find \
+        . \
+        -iname \
+	  '*.pkg.*' \
+	-exec \
+	  echo \
+	    ${_dir}/{} ';')
+    )
+  _msg_info \
+    "found packages ${_pkgs[*]}"
+  cd \
+    "${_oldpwd}"
+}
+
+_fur_get() {
+  local \
+   _dir="${1}" \
+   _oldpwd
+  _oldpwd="$( \
+    pwd)"
+  cd \
+    "${_dir}"
+  "_fur_get_opts"
+  if [[ "${quiet}" != "y" ]]; then
+    _get_opts+=(
+      -v
+    )
+  fi
+  "${_get_cmd}" \
+    "${_get_opts[@]}" \
+    "${_pkg}" || \
+  "${_get_cmd}" \
+    "${_get_opts[@]}" \
+    "${_pub}"
   _pkgs=(
-      $( \
-        find \
-          . \
-          -iname \
-	    '*.pkg.*' \
-	  -exec echo ${_pub_repo}/{} ';')
+    $( \
+      find \
+        . \
+        -iname \
+        '*.pkg.*' \
+        -exec \
+	  echo \
+	    ${_dir}/{} ';')
   )
   _msg_info \
     "removing packages ${_pkgs[*]}"
-  _msg_info \
-    "removing ${_pkgs[*]}"
   rm \
-    "${_pkgs[@]}"
+    -rf \
+    "${_pkgs[@]}" || \
+    true
   cd \
     "${_oldpwd}"
 }
@@ -285,6 +319,8 @@ _pub() {
     "publishing ${_packages[*]}"
   for _pkg \
     in "${_packages[@]}"; do
+    _msg_info \
+      "publishing ${_pkg}"
     _repo="$( \
       mktemp \
         -d)"
@@ -295,12 +331,17 @@ _pub() {
 #       "${_pub_opts[@]}"
 #     )
     "_${_origin}_get" \
-      "${_repo}"
-    "_${_pub}_get"
-      "${_pub_repo}"
+      "${_repo}" || \
+      echo \
+       "hi"
+    "_${_pub}_get" \
+      "${_pub_repo}" || \
+      echo "hi"
+    echo "found packages ${_src_pkgs[*]}"
     for _package \
       in "${_src_pkgs[@]}"; do
-      "_${_pub}_pub"
+      "_${_pub}_pub" \
+	"${_pub_repo}"
       _arch="$( \
         _get_arch \
 	  "${_package}")"
@@ -313,7 +354,8 @@ _pub() {
         "${_pkgs[@]}" \
         "${_package_dir}"
       git \
-	add
+	add \
+        "${_package_dir}"
       git \
 	-a \
 	-S \
@@ -343,7 +385,7 @@ _set_overrides() {
    _set_override \
     "repo" \
     "dir" \
-    "${HOME}/lur"
+    "${HOME}"
    _set_override \
     "repo" \
     "origin" \
@@ -352,6 +394,10 @@ _set_overrides() {
     "pub" \
     "plat" \
     "fur"
+   _set_override \
+    "pub" \
+    "dir" \
+    "${HOME}"
    _set_override \
     "output" \
     "dir" \
@@ -407,7 +453,7 @@ _show_config() {
   _msg_info "${app_name} configuration"
   _msg_info "          Publishing date:   $(_get "publishing" "date")"
   _msg_info "           Repo directory:   $(_get "repo" "dir")"
-  _msg_info "           Repo directory:   $(_get "repo" "origin")"
+  _msg_info "              Repo origin:   $(_get "repo" "origin")"
   _msg_info "      Publishing platform:   $(_get "pub" "plat")"
   _msg_info "     Publishing directory:   $(_get "pub" "dir")"
   _msg_info "                 Packages:   $(_get "local" "packages")"

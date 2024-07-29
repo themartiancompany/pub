@@ -234,6 +234,8 @@ _fur_pub() {
     3
   _packages+=(
     "$@")
+  _msg_info \
+   "add tmc remote in repo '${_dir}/${_pub}'"
   git \
     -C "${_dir}/${_pub}" \
     remote \
@@ -334,6 +336,7 @@ _pub() {
     "_${_pub}_pub" \
       "${_pub_repo}" \
       "${_pkg}" \
+      "${_key}" \
       "${_src_pkgs[@]}"
   done
   cd \

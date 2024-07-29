@@ -422,10 +422,12 @@ ENDUSAGETEXT
 _show_config() {
   _msg_info "${app_name} configuration"
   _msg_info "          Publishing date:   $(_get "publishing" "date")"
-  _msg_info "           Repo directory:   $(_get "repo" "dir")"
   _msg_info "              Repo origin:   $(_get "repo" "origin")"
+  _msg_info "           Repo directory:   $(_get "repo" "dir")"
   _msg_info "      Publishing platform:   $(_get "pub" "plat")"
   _msg_info "     Publishing directory:   $(_get "pub" "dir")"
+  _msg_info "            Signature key:   $(_get "pgp" "key")"
+  _msg_info "          Signature email:   $(_get "pgp" "email")"
   _msg_info "                 Packages:   $(_get "local" "packages")"
   _msg_info "         Output directory:   $(_get "output" "dir")"
 }

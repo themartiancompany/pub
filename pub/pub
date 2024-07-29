@@ -392,12 +392,12 @@ _pub() {
 	"publishing into '${_pub_repo}/${_package_dir}'"
       mkdir \
 	-p \
-	"${_pub_repo}/${_package_dir}"
+	"${_pub_repo}/${_pub}/${_package_dir}"
       rsync -v \
         "${_src_pkgs[@]}" \
-        "${_pub_repo}/${_package_dir}"
+        "${_pub_repo}/${_pub}/${_package_dir}"
       find \
-        "${_pub_repo}/${_package_dir}"
+        "${_pub_repo}/${_pub}/${_package_dir}"
       _msg_info \
         "entering ${_pub_repo}/${_pub}"
       cd \
@@ -411,6 +411,14 @@ _pub() {
 	-a \
 	-S \
 	-m "publish"
+      git \
+	remote \
+	 add \
+	   tmc \
+	   "github:themartiancompany/${_pub}"
+      git \
+	push \
+	tmc
     done
    #  _pkgs=(
    #    $(ls \

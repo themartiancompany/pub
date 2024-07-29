@@ -196,10 +196,41 @@ _ur_get_opts(){
   )
 }
 
-_origin_lur() {
+_lur_get() {
+  local \
+    _dir="${1}"
   cd \
     "${pub_repo}"
   "_${_pub}_get_opts"
+}
+
+fur_get() {
+  local \
+   _dir="${1}" \
+   _oldpwd
+  _oldpwd="$( \
+    _pwd)"
+  cd \
+    "${_dir}"
+  "_fur_get_opts"
+  if [[ "${quiet}" != "y" ]]; then
+    _get_opts+=(
+      -v
+    )
+  fi
+  "${_get_cmd}" \
+      "${_get_opts[@]}" \
+      "${_pkg}" || \
+  "${_get_cmd}" \
+      "${_get_opts[@]}" \
+      "${_pub}"
+
+  cd \
+    "${_oldpwd}"
+}
+
+_pub_fur() {
+
 }
 
 # $@: packages
@@ -211,7 +242,6 @@ _pub() {
     _pub="${4}" \
     _packages=() \
     _pkgs=() \
-    _pacman_opts=() \
     _get_opts=() \
     _opts=() \
     _pkg \
@@ -223,10 +253,6 @@ _pub() {
   )
   _msg_info \
     "publishing ${_packages[*]}"
-  _pacman_opts+=(
-    -U
-    --noconfirm
-  )
   for _pkg \
     in "${_packages[@]}"; do
     _repo="$( \
@@ -238,9 +264,8 @@ _pub() {
 #     _opts=(
 #       "${_pub_opts[@]}"
 #     )
-    cd \
-      "${_pub_repo}"
-    "_${_pub}_get_opts"
+    "${_origin}_get"
+    "_${_pub}_get"
     if [[ "${quiet}" != "y" ]]; then
       _get_opts+=(
         -v
@@ -261,31 +286,11 @@ _pub() {
 	  -exec echo ${_pub_repo}/{} ';')
     )
     _msg_info \
-      "found packages ${_pkgs[*]}"
-    _sigs=(
-      $( \
-        find \
-          . \
-          -iname \
-	    '*.sig' \
-	  -exec echo ${_pub_repo}/{} ';')
-    )
+      "removing packages ${_pkgs[*]}"
     _msg_info \
-      "removing signatures ${_sigs[*]}"
-    mv \
-      "${_sigs[@]}" \
-      .
+      "removing ${_pkgs[*]}"
     rm \
-      *".sig"
-    _pkgs=(
-      $( \
-        find \
-          . | \
-	  grep \
-	    "pkg")
-    )
-    _msg_info \
-      "moving ${_pkgs[*]}"
+      "${_pkgs[@]}"
     for _package \
       in "${_pkgs[@]}"; do
       _arch="$( \
@@ -298,13 +303,20 @@ _pub() {
 	"${_package_dir}"
       mv \
         "${_pkgs[@]}" \
-        "$(_get_platform)/${_arch}"
-    _pkgs=(
-      $(ls \
-	  *".pkg."*)
-    )
-    _msg_info \
-      "installing ${_pkgs[*]}"
+        "${_package_dir}"
+      git \
+	add
+      git \
+	-a \
+	-S \
+	-m "publish"
+    done
+   #  _pkgs=(
+   #    $(ls \
+   #        *".pkg."*)
+   #  )
+   #  _msg_info \
+   #    "installing ${_pkgs[*]}"
     # pacman \
     #   "${_pacman_opts[@]}" \
     #   "${_pkgs[@]}"

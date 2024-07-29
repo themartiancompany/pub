@@ -325,7 +325,11 @@ _fur_get() {
 }
 
 _fur_pub() {
-  echo "hi"
+  local \
+    _dir="${1}"
+  _msg_info \
+    "publishing directory ${_dir} on fur"
+
 }
 
 # $@: packages
@@ -385,13 +389,19 @@ _pub() {
       _package_dir="$( \
         _get_platform)/${_arch}"
       _msg_info \
-	"publishing into $(_get "package" "dir")"
+	"publishing into '${_pub_repo}/${_package_dir}'"
       mkdir \
 	-p \
 	"${_pub_repo}/${_package_dir}"
-      mv \
-        "${_pkgs[@]}" \
-        "${_package_dir}"
+      rsync -v \
+        "${_src_pkgs[@]}" \
+        "${_pub_repo}/${_package_dir}"
+      find \
+        "${_pub_repo}/${_package_dir}"
+      _msg_info \
+        "entering ${_pub_repo}"
+      cd \
+        "${_pub_repo}"
       git \
 	add \
         "${_package_dir}"

@@ -153,19 +153,18 @@ _build_repo() {
       repo
 }
 
-_fur_get(){
+_fur_get_opts(){
   local \
     _fur_opts=()
   _get_cmd="fur"
   _fur_opts=(
     -d
     -w
-      "${_pub_dir}"
+      "${_pub_repo}"
   )
   _get_opts=(
     "${_fur_opts[@]}"
   )
-
 }
 
 _ur_get_opts(){

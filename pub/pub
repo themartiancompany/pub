@@ -341,6 +341,41 @@ _pub() {
     "${OLDPWD}"
 }
 
+_detect_pgp_key() {
+  local \
+    _config
+  _config="$( \
+    git \
+      config \
+        --list | \
+      grep \
+        signingkey | \
+        awk \
+          -F \
+	    "=" \
+	  '{print $2}')"
+  echo \
+    "${_config}"
+}
+
+_detect_pgp_email() {
+  local \
+    _config
+  _config="$( \
+    git \
+      config \
+        --list | \
+      grep \
+        email | \
+        awk \
+          -F \
+	    "=" \
+	  '{print $2}')"
+  echo \
+    "${_config}"
+}
+
+
 # Set defaults and, if present, overrides
 # from arch-grub command line option parameters
 _set_overrides() {
@@ -364,6 +399,10 @@ _set_overrides() {
     "pub" \
     "dir" \
     "${HOME}"
+  _set_override \
+    "pgp" \
+    "key" \
+    "$(_detect_pgp_key)"
   _set_override \
     "output" \
     "dir" \

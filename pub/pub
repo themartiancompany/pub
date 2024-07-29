@@ -244,8 +244,6 @@ _fur_pub() {
     in "${_packages[@]}"; do
     _msg_info \
       "publishing package: ${_package}" 
-    _oldpwd="$( \
-      pwd)"
     _arch="$( \
       _get_arch \
         "${_package}")"

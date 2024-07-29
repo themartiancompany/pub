@@ -199,12 +199,27 @@ _ur_get_opts(){
 _lur_get() {
   local \
     _dir="${1}"
+   _oldpwd
+  _oldpwd="$( \
+    _pwd)"
   cd \
-    "${pub_repo}"
-  "_${_pub}_get_opts"
+    "${_dir}"
+  "_lur_get_opts"
+  _src_pkgs=(
+    $( \
+      find \
+        . \
+        -iname \
+	  '*.pkg.*' \
+	-exec \
+	  echo \
+	    ${_dir}/{} ';')
+    )
+  cd \
+    "${_oldpwd}"
 }
 
-fur_get() {
+_fur_get() {
   local \
    _dir="${1}" \
    _oldpwd
@@ -224,13 +239,26 @@ fur_get() {
   "${_get_cmd}" \
       "${_get_opts[@]}" \
       "${_pub}"
-
+  _pkgs=(
+      $( \
+        find \
+          . \
+          -iname \
+	    '*.pkg.*' \
+	  -exec echo ${_pub_repo}/{} ';')
+  )
+  _msg_info \
+    "removing packages ${_pkgs[*]}"
+  _msg_info \
+    "removing ${_pkgs[*]}"
+  rm \
+    "${_pkgs[@]}"
   cd \
     "${_oldpwd}"
 }
 
-_pub_fur() {
-
+_fur_pub() {
+  echo "hi"
 }
 
 # $@: packages
@@ -264,35 +292,13 @@ _pub() {
 #     _opts=(
 #       "${_pub_opts[@]}"
 #     )
-    "${_origin}_get"
+    "_${_origin}_get" \
+      "${_repo}"
     "_${_pub}_get"
-    if [[ "${quiet}" != "y" ]]; then
-      _get_opts+=(
-        -v
-    )
-    fi
-    "${_get_cmd}" \
-        "${_get_opts[@]}" \
-        "${_pkg}" || \
-    "${_get_cmd}" \
-        "${_get_opts[@]}" \
-        "${_pub}"
-    _pkgs=(
-      $( \
-        find \
-          . \
-          -iname \
-	    '*.pkg.*' \
-	  -exec echo ${_pub_repo}/{} ';')
-    )
-    _msg_info \
-      "removing packages ${_pkgs[*]}"
-    _msg_info \
-      "removing ${_pkgs[*]}"
-    rm \
-      "${_pkgs[@]}"
+      "${_pub_repo}"
     for _package \
-      in "${_pkgs[@]}"; do
+      in "${_src_pkgs[@]}"; do
+      "_${_pub}_pub"
       _arch="$( \
         _get_arch \
 	  "${_package}")"
@@ -300,7 +306,7 @@ _pub() {
         _get_platform)/${_arch}"
       mkdir \
 	-p \
-	"${_package_dir}"
+	"${_pub_repo}/${_package_dir}"
       mv \
         "${_pkgs[@]}" \
         "${_package_dir}"

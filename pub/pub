@@ -399,14 +399,16 @@ _pub() {
       find \
         "${_pub_repo}/${_package_dir}"
       _msg_info \
-        "entering ${_pub_repo}"
+        "entering ${_pub_repo}/${_pub}"
       cd \
         "${_pub_repo}/${_pub}"
+      tree .
       git \
 	add \
         "${_package_dir}"
       git \
 	commit \
+	-a \
 	-S \
 	-m "publish"
     done

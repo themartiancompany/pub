@@ -235,7 +235,7 @@ _fur_pub() {
   _packages+=(
     "$@")
   git \
-    -C "${_dir}" \
+    -C "${_dir}/${_pub}" \
     remote \
       add \
         tmc \
@@ -403,6 +403,10 @@ _set_overrides() {
     "pgp" \
     "key" \
     "$(_detect_pgp_key)"
+  _set_override \
+    "pgp" \
+    "email" \
+    "$(_detect_pgp_email)"
   _set_override \
     "output" \
     "dir" \

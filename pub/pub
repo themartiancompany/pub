@@ -90,7 +90,8 @@ _build_pkg() {
     _mode="${2}"  \
     _server="${3}" \
     _pwd
-  _pwd="$(pwd)"
+  _pwd="$( \
+    pwd)"
   echo \
     "building ${_pkgname}"
   if [ "${_mode}" = "src" ]; then
@@ -121,7 +122,8 @@ _build_repo() {
     _server="${3}" \
     _profile \
     _pwd
-  _pwd=$(pwd)
+  _pwd=$( \
+    pwd)
   _profile=$( \
     basename \
       "$(pwd)")
@@ -198,10 +200,10 @@ _ur_get_opts(){
 
 _lur_get() {
   local \
-    _dir="${1}"
+    _dir="${1}" \
    _oldpwd
   _oldpwd="$( \
-    _pwd)"
+    pwd)"
   cd \
     "${_dir}"
   "_lur_get_opts"

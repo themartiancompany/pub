@@ -33,6 +33,25 @@ _global_variables() {
   quiet=""
 }
 
+_get_arch() {
+  local \
+    _pkg="${1}" \
+    _filename
+  _filename="$( \
+    basename \
+      "${_pkg}")"
+  echo \
+    "${_filename}" | \
+    awk \
+      -F \
+        "-" \
+      '{print $5}' | \
+      awk \
+        -F \
+	  "." \
+	'{print $1}'
+}
+
 _get_platform() {
   local \
     _os
@@ -190,7 +209,7 @@ _lur_get_opts() {
     _lur_opts=()
   _get_cmd="lur"
   _lur_opts=(
-    -d
+    # -d
     -o
       "${_dir}"
     -n
@@ -217,20 +236,24 @@ _lur_get() {
   local \
     _dir="${1}" \
    _oldpwd
-  _msg_info \
-    "running lur ${_pkg}"
   _oldpwd="$( \
     pwd)"
   cd \
     "${_dir}"
   "_lur_get_opts"
-  _msg_info \
-     "Debug"
   if [[ "${quiet}" != "y" ]]; then
     _get_opts+=(
       -v
     )
   fi
+  if [[ "${color}" == "y" ]]; then
+    _get_opts+=(
+      -c
+    )
+  fi || \
+    true
+  _msg_info \
+   "running lur with ${_get_opts[*]}"
   "${_get_cmd}" \
       "${_get_opts[@]}" \
       "${_pkg}" || \
@@ -248,7 +271,7 @@ _lur_get() {
 	    ${_dir}/{} ';')
     )
   _msg_info \
-    "found packages ${_pkgs[*]}"
+    "found packages ${_src_pkgs[*]}"
   cd \
     "${_oldpwd}"
 }
@@ -267,6 +290,14 @@ _fur_get() {
       -v
     )
   fi
+  if [[ "${color}" == "y" ]]; then
+    _get_opts+=(
+      -c
+    )
+  fi || \
+    true
+  _msg_info \
+   "running fur with ${_get_opts[*]}"
   "${_get_cmd}" \
     "${_get_opts[@]}" \
     "${_pkg}" || \
@@ -316,11 +347,11 @@ _pub() {
     "$@"
   )
   _msg_info \
-    "publishing ${_packages[*]}"
+    "Packages: ${_packages[*]}."
   for _pkg \
     in "${_packages[@]}"; do
     _msg_info \
-      "publishing ${_pkg}"
+      "Package '${_pkg}'."
     _repo="$( \
       mktemp \
         -d)"
@@ -334,12 +365,18 @@ _pub() {
       "${_repo}" || \
       echo \
        "hi"
+    _msg_info \
+      "publishing packages ${_src_pkgs[*]}"
+    _get_opts=()
     "_${_pub}_get" \
       "${_pub_repo}" || \
       echo "hi"
-    echo "found packages ${_src_pkgs[*]}"
+    _msg_info \
+     "publishing packages ${_src_pkgs[*]}"
     for _package \
       in "${_src_pkgs[@]}"; do
+      _msg_info \
+	"publishing package: ${_package}" 
       "_${_pub}_pub" \
 	"${_pub_repo}"
       _arch="$( \
@@ -347,6 +384,8 @@ _pub() {
 	  "${_package}")"
       _package_dir="$( \
         _get_platform)/${_arch}"
+      _msg_info \
+	"publishing into $(_get "package" "dir")"
       mkdir \
 	-p \
 	"${_pub_repo}/${_package_dir}"
@@ -382,23 +421,23 @@ _set_overrides() {
     "publishing" \
     "date" \
     "$(_get_date_human)"
-   _set_override \
+  _set_override \
     "repo" \
     "dir" \
     "${HOME}"
-   _set_override \
+  _set_override \
     "repo" \
     "origin" \
     "lur"
-   _set_override \
+  _set_override \
     "pub" \
     "plat" \
     "fur"
-   _set_override \
+  _set_override \
     "pub" \
     "dir" \
     "${HOME}"
-   _set_override \
+  _set_override \
     "output" \
     "dir" \
     "$(pwd)"

@@ -233,15 +233,19 @@ _fur_pub() {
   shift \
     3
   _packages+=(
-    "$@")
+    "$@"
+  )
+  _oldpwd="$( \
+    pwd)"
   _msg_info \
    "add tmc remote in repo '${_dir}/${_pub}'"
   git \
-    -C "${_dir}/${_pub}" \
+    -C \
+      "${_dir}/${_pub}" \
     remote \
       add \
         tmc \
-	"github:themartiancompany/${_pub}"
+        "github:themartiancompany/${_pub}"
   for _package \
     in "${_packages[@]}"; do
     _msg_info \

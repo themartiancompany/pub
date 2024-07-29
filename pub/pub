@@ -27,9 +27,25 @@ _global_variables() {
   repo_dir=""
   repo_origin=""
   pub_plat=""
+  pub_dir=""
   output_dir=""
   color=""
   quiet=""
+}
+
+_get_platform() {
+  local \
+    _os
+  _os="$( \
+    uname \
+      -o)"
+  if [[ "${_os}" == "Android" ]]; then
+    echo \
+      "termux"
+  elif [[ "${_os}" == "GNU/Linux" ]]; then
+    echo \
+      "arch"
+  fi
 }
 
 _aspe() {
@@ -244,14 +260,14 @@ _pub() {
 	  -exec echo ${_pub_repo}/{} ';')
     )
     _msg_info \
-      "found ${_pkgs[*]}"
+      "found packages ${_pkgs[*]}"
     _sigs=(
       $( \
         find \
           . \
           -iname \
 	    '*.sig' \
-	  -exec echo ${_repo}/${_pkg}/{} ';')
+	  -exec echo ${_pub_repo}/{} ';')
     )
     _msg_info \
       "removing signatures ${_sigs[*]}"
@@ -358,10 +374,11 @@ ENDUSAGETEXT
 # Shows configuration options.
 _show_config() {
   _msg_info "${app_name} configuration"
-  _msg_info "           Publishing date:  $(_get "publishing" "date")"
-  _msg_info "              Repo origin:   $(_get "repo" "dir")"
+  _msg_info "          Publishing date:   $(_get "publishing" "date")"
+  _msg_info "           Repo directory:   $(_get "repo" "dir")"
   _msg_info "           Repo directory:   $(_get "repo" "origin")"
   _msg_info "      Publishing platform:   $(_get "pub" "plat")"
+  _msg_info "     Publishing directory:   $(_get "pub" "dir")"
   _msg_info "                 Packages:   $(_get "local" "packages")"
   _msg_info "         Output directory:   $(_get "output" "dir")"
 }
@@ -380,6 +397,7 @@ while \
     d) override_repo_dir="${OPTARG}" ;;
     o) override_repo_origin="${OPTARG}" ;;
     p) override_pub_platform="${OPTARG}" ;;
+    w) override_pub_dir="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;

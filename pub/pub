@@ -180,6 +180,10 @@ _ur_get_opts(){
   )
 }
 
+_fur_pub() {
+  cd \
+    "${pub_repo}"
+}
 
 # $@: packages
 _pub() {
@@ -218,18 +222,26 @@ _pub() {
 #       "${_pub_opts[@]}"
 #     )
     cd \
-      "${_repo}"
+      "${_pub_repo}"
     "_${_pub}_get_opts"
-    "_${_get_cmd}" \
+    if [[ "${quiet}" != "y" ]]; then
+      _get_opts+=(
+        -v
+    )
+    fi
+    "${_get_cmd}" \
         "${_get_opts[@]}" \
-        "${_pkg}"
+        "${_pkg}" || \
+    "${_get_cmd}" \
+        "${_get_opts[@]}" \
+        "${_pub}"
     _pkgs=(
       $( \
         find \
           . \
           -iname \
 	    '*.pkg.*' \
-	  -exec echo ${_repo}/${_pkg}/{} ';')
+	  -exec echo ${_pub_repo}/{} ';')
     )
     _msg_info \
       "found ${_pkgs[*]}"

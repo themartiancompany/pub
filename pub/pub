@@ -28,6 +28,8 @@ _global_variables() {
   repo_origin=""
   pub_plat=""
   pub_dir=""
+  pgp_key=""
+  pgp_email=""
   output_dir=""
   color=""
   quiet=""
@@ -65,129 +67,6 @@ _get_platform() {
     echo \
       "arch"
   fi
-}
-
-_aspe() {
-  local \
-    _pkgname="${1}" \
-    _source="${2}"
-  aspe \
-    -p \
-    "${_source}" \
-    "${_pkgname}"
-}
-
-_makepkg() {
-  local \
-    _pkgname="${1}" \
-    _source="${2}" \
-    _user="${3}"
-  local \
-    _key \
-    _awk_pgpkeys_cmd='/validpgpkeys=/{flag=1;next}/\)/{flag=0}flag' \
-    _validpgpkeys
-  _aspe \
-    "${_pkgname}"
-    "${_source}"
-  cd \
-    "${_pkgname}" || \
-    exit
-  source \
-    'PKGBUILD'
-  gpg \
-    --recv-keys \
-    "${validpgpkeys[@]}"
-  reallymakepkg
-  mv \
-    "${_pkgname}"*".pkg.tar."* \
-    "${_server}"
-}
-
-_build_pkg() {
-  local \
-    _pkgname="${1}" \
-    _mode="${2}"  \
-    _server="${3}" \
-    _pwd
-  _pwd="$( \
-    pwd)"
-  echo \
-    "building ${_pkgname}"
-  if [ "${_mode}" = "src" ]; then
-    _makepkg \
-      "${_pkgname}"
-  elif [ "${_mode}" = "fakepkg" ]; then
-    cd \
-      "${_server}" || \
-    exit
-    fakepkg \
-      "${_pkgname}"
-  fi
-  cd \
-    "${_server}" || \
-    exit
-  repo-add \
-    "${_profile}.db.tar.gz" \
-    "${_pkgname}"*".pkg.tar."*
-  cd \
-    "${_pwd}" || \
-    exit
-}
-
-_build_repo() {
-  local \
-    _mode="${1}" \
-    _packages="${2}" \
-    _server="${3}" \
-    _profile \
-    _pwd
-  _pwd=$( \
-    pwd)
-  _profile=$( \
-    basename \
-      "$(pwd)")
-  # shellcheck source=./packages.extra
-  # shellcheck disable=SC1091
-  source \
-    "${_pwd}/${_packages}"
-  [[ "${_server}" == "" ]] && \
-    _server="/tmp/ur/${_profile}"
-  rm \
-    -rf \
-      repo \
-      "${_server}"
-  mkdir \
-    -p \
-      repo \
-      "${_server}"
-  chown \
-    "$( \
-      id \
-        -u):$( \
-	  id \
-	    -g)" \
-    "${_server}"
-  chmod \
-    700 \
-    "${_server}" 
-  cd \
-    repo || \
-    exit
-  # shellcheck disable=SC2154
-  echo \
-    "building ${_packages[*]}"
-  for _pkg \
-    in "${_packages[@]}"; do
-    _build_pkg \
-      "${_pkg}" \
-      "${_mode}" \
-      "${_server}"
-  done
-  cd \
-    ..
-  rm \
-    -rf \
-      repo
 }
 
 _fur_get_opts(){
@@ -230,50 +109,6 @@ _ur_get_opts(){
   _get_opts+=(
     "${_aspe_opts[@]}"
   )
-}
-
-_lur_get() {
-  local \
-    _dir="${1}" \
-   _oldpwd
-  _oldpwd="$( \
-    pwd)"
-  cd \
-    "${_dir}"
-  "_lur_get_opts"
-  if [[ "${quiet}" != "y" ]]; then
-    _get_opts+=(
-      -v
-    )
-  fi
-  if [[ "${color}" == "y" ]]; then
-    _get_opts+=(
-      -c
-    )
-  fi || \
-    true
-  _msg_info \
-   "running lur with ${_get_opts[*]}"
-  "${_get_cmd}" \
-      "${_get_opts[@]}" \
-      "${_pkg}" || \
-  "${_get_cmd}" \
-      "${_get_opts[@]}" \
-      "${_pub}"
-  _src_pkgs=(
-    $( \
-      find \
-        . \
-        -iname \
-	  '*.pkg.*' \
-	-exec \
-	  echo \
-	    ${_dir}/{} ';')
-    )
-  _msg_info \
-    "found packages ${_src_pkgs[*]}"
-  cd \
-    "${_oldpwd}"
 }
 
 _fur_get() {
@@ -324,15 +159,62 @@ _fur_get() {
     "${_oldpwd}"
 }
 
-_fur_sign() {
- local \
+_lur_get() {
+  local \
     _dir="${1}" \
+   _oldpwd
+  _oldpwd="$( \
+    pwd)"
+  cd \
+    "${_dir}"
+  "_lur_get_opts"
+  if [[ "${quiet}" != "y" ]]; then
+    _get_opts+=(
+      -v
+    )
+  fi
+  if [[ "${color}" == "y" ]]; then
+    _get_opts+=(
+      -c
+    )
+  fi || \
+    true
+  _msg_info \
+   "running lur with ${_get_opts[*]}"
+  "${_get_cmd}" \
+      "${_get_opts[@]}" \
+      "${_pkg}" || \
+  "${_get_cmd}" \
+      "${_get_opts[@]}" \
+      "${_pub}"
+  _src_pkgs=(
+    $( \
+      find \
+        . \
+        -iname \
+	  '*.pkg.*' \
+	-exec \
+	  echo \
+	    ${_dir}/{} ';')
+    )
+  _msg_info \
+    "found packages ${_src_pkgs[*]}"
+  cd \
+    "${_oldpwd}"
+}
+
+_fur_sign() {
+  local \
+    _dir="${1}" \
+    _key="${2}" \
     _oldpwd
- _old_pwd="$( \
-  pwd)"
+  _oldpwd="$( \
+    pwd)"
   cd \
     "${_dir}"
   gpg \
+    --local-user \
+      "${_key}" \
     --sign \
     --detach \
     *".pkg.tar.xz"
@@ -344,11 +226,12 @@ _fur_pub() {
   local \
     _dir="${1}" \
     _pkg="${2}" \
+    _key="${3}" \
     _packages=() \
     _package \
     _oldpwd
   shift \
-    2
+    3
   _packages+=(
     "$@")
   for _package \
@@ -376,7 +259,8 @@ _fur_pub() {
       "${_packages[@]}" \
       "${_dir}/${_pub}/${_package_dir}"
     "_${_pub}_sign" \
-      "${_dir}/${_pub}/${_package_dir}"
+      "${_dir}/${_pub}/${_package_dir}" \
+      "${_key}"
     _msg_info \
       "entering ${_pub_repo}/${_pub}"
     cd \
@@ -410,7 +294,10 @@ _pub() {
     _output_dir="${1}" \
     _repo="${2}" \
     _origin="${3}" \
+    _origin="${3}" \
     _pub="${4}" \
+    _key="${5}" \
+    _email="${6}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
@@ -418,7 +305,7 @@ _pub() {
     _pkg \
     _pub_repo
   shift \
-    4
+    6
   _packages=(
     "$@"
   )
@@ -513,6 +400,10 @@ Usage:
 			  Default: $(_get "repo" "dir")
      -p                   Repo origin.
 			  Default: $(_get "repo" "origin")
+     -k                   OpenPG signature key.
+			  Default: $(_get "pgp" "key")
+     -e                   OpenPG signature email.
+			  Default: $(_get "pgp" "email")
      -o                   Output directory.
 			  Default: $(_get "output" "dir")
      -c                   Colors.
@@ -545,13 +436,15 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'd:o:p:cvh?' \
+    'd:s:p:k:e:w:o:cvh?' \
     arg; do
   case \
     "${arg}" in
     d) override_repo_dir="${OPTARG}" ;;
-    o) override_repo_origin="${OPTARG}" ;;
+    s) override_repo_origin="${OPTARG}" ;;
     p) override_pub_platform="${OPTARG}" ;;
+    k) override_pgp_key="${OPTARG}" ;;
+    e) override_pgp_email="${OPTARG}" ;;
     w) override_pub_dir="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
     c) override_color="y" ;;
@@ -588,6 +481,8 @@ app_opts=(
   "${repo_dir}"
   "${repo_origin}"
   "${pub_plat}"
+  "${pgp_key}"
+  "${pgp_email}"
   "${local_packages[@]}"
 )
 _pub \

@@ -234,6 +234,12 @@ _fur_pub() {
     3
   _packages+=(
     "$@")
+  git \
+    -C "${_dir}" \
+    remote \
+      add \
+        tmc \
+	"github:themartiancompany/${_pub}"
   for _package \
     in "${_packages[@]}"; do
     _msg_info \
@@ -275,11 +281,6 @@ _fur_pub() {
       -S \
       -m \
         "publish"
-  git \
-    remote \
-      add \
-        tmc \
-	"github:themartiancompany/${_pub}"
   git \
     push \
       tmc \

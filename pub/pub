@@ -368,71 +368,40 @@ _fur_pub() {
     )
     _msg_info \
       "${_msg[*]}"
-  mkdir \
-    -p \
-    "${_dir}/${_pub}/${_package_dir}"
-  rsync \
-    -v \
-    "${_packages[@]}" \
-    "${_dir}/${_pub}/${_package_dir}"
-  "_${_pub}_sign"
-  _msg_info \
-    "entering ${_pub_repo}/${_pub}"
-  cd \
-    "${_pub_repo}/${_pub}"
-  tree \
-    .
-  git \
-    add \
-      .
-
-      "_${_pub}_pub" \
-	"${_pub_repo}"
-      git \
-	add \
-	.
-    done
+    mkdir \
+      -p \
+      "${_dir}/${_pub}/${_package_dir}"
+    rsync \
+      -v \
+      "${_packages[@]}" \
+      "${_dir}/${_pub}/${_package_dir}"
+    "_${_pub}_sign" \
+      "${_dir}/${_pub}/${_package_dir}"
+    _msg_info \
+      "entering ${_pub_repo}/${_pub}"
+    cd \
+      "${_pub_repo}/${_pub}"
     git \
-      commit \
-        -a \
-        -S \
-        -m "publish"
-      git \
-	remote \
-	 add \
-	   tmc \
-	   "github:themartiancompany/${_pub}"
-      git \
-	push \
-	tmc \
-	"${_pkg}"
-
-  _oldpwd="$( \
-    pwd)"
-  _arch="$( \
-    _get_arch \
-      "${_package}")"
-  _package_dir="$( \
-    _get_platform)/${_arch}"
-  _msg_info \
-    "publishing origin ${_origin} directory ${_dir} in ${_pub} directory '${_dir}/${_package_dir}'"
-  mkdir \
-    -p \
-    "${_dir}/${_pub}/${_package_dir}"
-  rsync \
-    -v \
-    "${_src_pkgs[@]}" \
-    "${_dir}/${_pub}/${_package_dir}"
-  "_${_pub}_sign"
-  _msg_info \
-    "entering ${_pub_repo}/${_pub}"
-  cd \
-    "${_pub_repo}/${_pub}"
-  tree \
-    .
+      add \
+        "${_package_dir}"
+  done
   git \
-    add \
-      .
+    commit \
+      -a \
+      -S \
+      -m \
+        "publish"
+  git \
+    remote \
+      add \
+        tmc \
+	"github:themartiancompany/${_pub}"
+  git \
+    push \
+      tmc \
+      "${_pkg}"
+  cd \
+    "${_oldpwd}"
 }
 
 # $@: packages
@@ -474,40 +443,11 @@ _pub() {
       "${_pub_repo}" || \
       echo "hi"
     _msg_info \
-     "publishing packages ${_src_pkgs[*]}"
-    for _package \
-      in "${_src_pkgs[@]}"; do
-      _msg_info \
-	"publishing package: ${_package}" 
-      "_${_pub}_pub" \
-	"${_pub_repo}"
-      git \
-	add \
-	.
-    done
-    git \
-      commit \
-        -a \
-        -S \
-        -m "publish"
-      git \
-	remote \
-	 add \
-	   tmc \
-	   "github:themartiancompany/${_pub}"
-      git \
-	push \
-	tmc \
-	"${_pkg}"
-   #  _pkgs=(
-   #    $(ls \
-   #        *".pkg."*)
-   #  )
-   #  _msg_info \
-   #    "installing ${_pkgs[*]}"
-    # pacman \
-    #   "${_pacman_opts[@]}" \
-    #   "${_pkgs[@]}"
+       "publishing packages ${_src_pkgs[*]}"
+    "_${_pub}_pub" \
+	"${_pub_repo}" \
+	"${_pkg}" \
+	"${_src_pkgs[@]}"
   done
   cd \
     "${OLDPWD}"

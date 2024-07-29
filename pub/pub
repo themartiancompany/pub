@@ -283,8 +283,8 @@ _fur_pub() {
         "publish"
   git \
     push \
-      tmc \
-      "${_pkg}"
+      tmc
+      # "${_pkg}"
   cd \
     "${_oldpwd}"
 }

@@ -333,9 +333,9 @@ _pub() {
     _msg_info \
        "publishing packages ${_src_pkgs[*]}"
     "_${_pub}_pub" \
-	"${_pub_repo}" \
-	"${_pkg}" \
-	"${_src_pkgs[@]}"
+      "${_pub_repo}" \
+      "${_pkg}" \
+      "${_src_pkgs[@]}"
   done
   cd \
     "${OLDPWD}"

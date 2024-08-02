@@ -250,6 +250,17 @@ _fur_pub() {
     in "${_packages[@]}"; do
     _msg_info \
       "publishing package: ${_package}" 
+    git \
+      -C \
+        "${_dir}/${_pub}" \
+      checkout \
+        -b \
+        "${_package}" || \
+    git \
+      -C \
+        "${_dir}/${_pub}" \
+      checkout \
+        "${_package}"
     _arch="$( \
       _get_arch \
         "${_package}")"
@@ -275,7 +286,9 @@ _fur_pub() {
       "entering ${_pub_repo}/${_pub}"
     cd \
       "${_pub_repo}/${_pub}"
-    git add .
+    git \
+      add \
+        .
     git \
       add \
         "${_package_dir}"

@@ -246,21 +246,21 @@ _fur_pub() {
       add \
         tmc \
         "github:themartiancompany/${_pub}"
+  git \
+    -C \
+      "${_dir}/${_pub}" \
+    checkout \
+      -b \
+      "${_pkg}" || \
+  git \
+    -C \
+      "${_dir}/${_pub}" \
+    checkout \
+      "${_pkg}"
   for _package \
     in "${_packages[@]}"; do
     _msg_info \
       "publishing package: ${_package}" 
-    git \
-      -C \
-        "${_dir}/${_pub}" \
-      checkout \
-        -b \
-        "${_package}" || \
-    git \
-      -C \
-        "${_dir}/${_pub}" \
-      checkout \
-        "${_package}"
     _arch="$( \
       _get_arch \
         "${_package}")"

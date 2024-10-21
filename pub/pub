@@ -38,20 +38,23 @@ _global_variables() {
 _get_arch() {
   local \
     _pkg="${1}" \
-    _filename
+    _filename \
+    _filename_array=() \
+    _string \
+    _arch
   _filename="$( \
     basename \
       "${_pkg}")"
+  IFS="-" \
+  read \
+    -r \
+    -a \
+    _filename_array <<< \
+    "${_filename}"
+  _string="${_filename_array[-1]}"
+  _arch="${_string%%.*}" 
   echo \
-    "${_filename}" | \
-    awk \
-      -F \
-        "-" \
-      '{print $5}' | \
-      awk \
-        -F \
-	  "." \
-	'{print $1}'
+    "${_arch}"
 }
 
 _get_platform() {

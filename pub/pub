@@ -27,6 +27,8 @@ _global_variables() {
   repo_dir=""
   repo_origin=""
   pub_plat=""
+  target_platform=""
+  target_arch=""
   pub_dir=""
   pgp_key=""
   pgp_email=""
@@ -117,7 +119,8 @@ _ur_get_opts(){
 _fur_get() {
   local \
    _dir="${1}" \
-   _oldpwd
+   _oldpwd \
+   _platform
   _oldpwd="$( \
     pwd)"
   cd \
@@ -142,12 +145,14 @@ _fur_get() {
   "${_get_cmd}" \
     "${_get_opts[@]}" \
     "${_pub}"
+  _platform="$( \
+    _get_platform)"
   _pkgs=(
     $( \
       find \
         . \
-        -iname \
-        '*.pkg.*' \
+        -iwholename \
+        "/${_platform}/*.pkg.*" \
         -exec \
 	  echo \
 	    ${_dir}/{} ';')

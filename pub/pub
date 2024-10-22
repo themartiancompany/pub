@@ -66,8 +66,8 @@ _fur_get_opts(){
   _get_cmd="fur"
   _fur_opts=(
     -d
-    -P
-      "${_platform}"
+    # -P
+    #   "${_platform}"
     -w
       "${_pub_repo}"
   )
@@ -136,15 +136,16 @@ _fur_get() {
   "${_get_cmd}" \
     "${_get_opts[@]}" \
     "${_pub}"
-  _pkgs=(
-    $( \
-      find \
-        . \
-        -iwholename \
-        "/${_platform}/*.pkg.*" \
-        -exec \
-	  echo \
-	    ${_dir}/{} ';')
+  # find \
+  #   "${_pub_repo}"
+  _pkgs=( $( \
+    find \
+      "${_pub_repo}" \
+      -iwholename \
+        "*/${_platform}/*.pkg.*" \
+      -exec \
+        echo \
+          '{}' ';')
   )
   _msg_info \
     "removing packages ${_pkgs[*]}"
@@ -193,7 +194,7 @@ _lur_get() {
         '*.pkg.*' \
       -exec \
         echo \
-	  "{}" ';')
+          "{}" ';')
   )
   _msg_info \
     "found packages ${_src_pkgs[*]}"

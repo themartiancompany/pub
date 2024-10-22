@@ -235,11 +235,12 @@ _fur_pub() {
     _dir="${1}" \
     _pkg="${2}" \
     _key="${3}" \
+    _platform="${4}" \
     _packages=() \
     _package \
     _oldpwd
   shift \
-    3
+    4
   _packages+=(
     "$@"
   )
@@ -402,6 +403,20 @@ _detect_pgp_email() {
     "${_config}"
 }
 
+_platform_auto_detect() {
+  local \
+    _platform="arch" \
+    _os
+  _os="$( \
+    uname \
+      -o)"
+  if [[ "${_os}" == "Android" ]] || \
+     [[ -v "TERMUX_VERSION" ]]; then
+    _platform="termux"
+  fi
+  echo \
+    "${_platform}"
+}
 
 # Set defaults and, if present, overrides
 # from arch-grub command line option parameters
@@ -438,7 +453,11 @@ _set_overrides() {
     "output" \
     "dir" \
     "$(pwd)"
-if [[ -v override_color ]]; then
+  _set_override \
+    "target" \
+    "platform" \
+    "$(_platform_auto_detect)"
+  if [[ -v override_color ]]; then
     color="${override_color}"
   elif [[ -z "${color}" ]]; then
     color="n"
@@ -496,6 +515,7 @@ _show_config() {
   _msg_info "           Repo directory:   $(_get "repo" "dir")"
   _msg_info "      Publishing platform:   $(_get "pub" "plat")"
   _msg_info "     Publishing directory:   $(_get "pub" "dir")"
+  _msg_info "          Target platform:   $(_get "target" "platform")"
   _msg_info "            Signature key:   $(_get "pgp" "key")"
   _msg_info "          Signature email:   $(_get "pgp" "email")"
   _msg_info "                 Packages:   $(_get "local" "packages")"
@@ -509,7 +529,7 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'd:s:p:k:e:w:o:cvh?' \
+    'd:s:p:k:e:w:o:P:cvh?' \
     arg; do
   case \
     "${arg}" in
@@ -520,6 +540,7 @@ while \
     e) override_pgp_email="${OPTARG}" ;;
     w) override_pub_dir="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
+    P) override_target_platform="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
     h|?) _set_overrides && \

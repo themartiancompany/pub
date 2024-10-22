@@ -59,27 +59,15 @@ _get_arch() {
     "${_arch}"
 }
 
-_get_platform() {
-  local \
-    _os
-  _os="$( \
-    uname \
-      -o)"
-  if [[ "${_os}" == "Android" ]]; then
-    echo \
-      "termux"
-  elif [[ "${_os}" == "GNU/Linux" ]]; then
-    echo \
-      "arch"
-  fi
-}
-
 _fur_get_opts(){
   local \
+    _platform="${1}" \
     _fur_opts=()
   _get_cmd="fur"
   _fur_opts=(
     -d
+    -P
+      "${_platform}"
     -w
       "${_pub_repo}"
   )
@@ -90,12 +78,14 @@ _fur_get_opts(){
 
 _lur_get_opts() {
   local \
+    _platform="${1}" \
     _lur_opts=()
   _get_cmd="lur"
   _lur_opts=(
-    # -d
+    -d \
+      "${_repo}/lur"
     -o
-      "${_dir}"
+      "${_tmp_dir}"
     -n
   )
   _get_opts+=(
@@ -119,13 +109,14 @@ _ur_get_opts(){
 _fur_get() {
   local \
    _dir="${1}" \
-   _oldpwd \
-   _platform
+   _platform="${2}" \
+   _oldpwd
   _oldpwd="$( \
     pwd)"
   cd \
     "${_dir}"
-  "_fur_get_opts"
+  "_fur_get_opts" \
+    "${_platform}"
   if [[ "${quiet}" != "y" ]]; then
     _get_opts+=(
       -v
@@ -138,15 +129,13 @@ _fur_get() {
   fi || \
     true
   _msg_info \
-   "running fur with ${_get_opts[*]}"
+    "running fur with ${_get_opts[*]}"
   "${_get_cmd}" \
     "${_get_opts[@]}" \
     "${_pkg}" || \
   "${_get_cmd}" \
     "${_get_opts[@]}" \
     "${_pub}"
-  _platform="$( \
-    _get_platform)"
   _pkgs=(
     $( \
       find \
@@ -170,12 +159,14 @@ _fur_get() {
 _lur_get() {
   local \
     _dir="${1}" \
+    _platform="${2}" \
    _oldpwd
   _oldpwd="$( \
     pwd)"
   cd \
     "${_dir}"
-  "_lur_get_opts"
+  "_lur_get_opts" \
+    "${_platform}"
   if [[ "${quiet}" != "y" ]]; then
     _get_opts+=(
       -v
@@ -195,16 +186,15 @@ _lur_get() {
   "${_get_cmd}" \
       "${_get_opts[@]}" \
       "${_pub}"
-  _src_pkgs=(
-    $( \
-      find \
-        . \
-        -iname \
-	  '*.pkg.*' \
-	-exec \
-	  echo \
-	    ${_dir}/{} ';')
-    )
+  _src_pkgs=( $( \
+    find \
+      "${_tmp_dir}" \
+      -iname \
+        '*.pkg.*' \
+      -exec \
+        echo \
+	  "{}" ';')
+  )
   _msg_info \
     "found packages ${_src_pkgs[*]}"
   cd \
@@ -273,8 +263,7 @@ _fur_pub() {
     _arch="$( \
       _get_arch \
         "${_package}")"
-    _package_dir="$( \
-      _get_platform)/${_arch}"
+    _package_dir="${_platform}/${_arch}"
     _msg=(
       "publishing origin ${_origin} directory ${_dir}"
       "in ${_pub} directory '${_dir}/${_package_dir}'"
@@ -322,40 +311,48 @@ _pub() {
     _output_dir="${1}" \
     _repo="${2}" \
     _origin="${3}" \
-    _origin="${3}" \
     _pub="${4}" \
     _key="${5}" \
     _email="${6}" \
+    _platform="${7}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
     _opts=() \
     _pkg \
-    _pub_repo
+    _pub_repo \
+    _tmp_dir
   shift \
-    6
+    7
   _packages=(
     "$@"
   )
+  if [[ "${_repo}" == "" ]]; then
+    _repo="$( \
+      mktemp \
+        -d)"
+  fi
   _msg_info \
     "Packages: ${_packages[*]}."
   for _pkg \
     in "${_packages[@]}"; do
     _msg_info \
       "Package '${_pkg}'."
-    _repo="$( \
+    _tmp_dir="$( \
       mktemp \
         -d)"
     _pub_repo="$( \
       mktemp \
         -d)"
     "_${_origin}_get" \
-      "${_repo}" || \
+      "${_repo}" \
+      "${_platform}" || \
       echo \
        "no get function for ${_origin}"
     _get_opts=()
     "_${_pub}_get" \
-      "${_pub_repo}" || \
+      "${_pub_repo}" \
+      "${_platform}" || \
       echo "hi"
     _msg_info \
        "publishing packages ${_src_pkgs[*]}"
@@ -363,6 +360,7 @@ _pub() {
       "${_pub_repo}" \
       "${_pkg}" \
       "${_key}" \
+      "${_platform}" \
       "${_src_pkgs[@]}"
   done
   cd \
@@ -496,6 +494,9 @@ Usage:
 			  Default: $(_get "pgp" "email")
      -o                   Output directory.
 			  Default: $(_get "output" "dir")
+     -P <platform>        Platform for which the package
+			  is built ('arch', 'termux').
+			  Default: $(_get "target" "platform")
      -c                   Colors.
      -h                   This message.
      -v                   Enable verbose output
@@ -577,6 +578,7 @@ app_opts=(
   "${pub_plat}"
   "${pgp_key}"
   "${pgp_email}"
+  "${target_platform}"
   "${local_packages[@]}"
 )
 _pub \

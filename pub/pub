@@ -502,8 +502,10 @@ Usage:
   options:
      -d                   Repo directory.
 			  Default: $(_get "repo" "dir")
-     -p                   Repo origin.
+     -s <origin>          Repo origin.
 			  Default: $(_get "repo" "origin")
+     -p <publisher>       Publishing platform.
+			  Default: $(_get "pub" "plat")
      -k                   OpenPG signature key.
 			  Default: $(_get "pgp" "key")
      -e                   OpenPG signature email.

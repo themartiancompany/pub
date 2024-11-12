@@ -249,6 +249,13 @@ _fur_pub() {
   git \
     -C \
       "${_dir}/${_pub}" \
+    remote \
+      add \
+        gl \
+        "gitlab:themartiancompany/${_pub}"
+  git \
+    -C \
+      "${_dir}/${_pub}" \
     checkout \
       -b \
       "${_pkg}" || \
@@ -301,6 +308,9 @@ _fur_pub() {
   git \
     push \
       tmc
+  git \
+    push \
+      gl
       # "${_pkg}"
   cd \
     "${_oldpwd}"

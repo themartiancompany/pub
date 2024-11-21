@@ -211,12 +211,13 @@ _fur_sign() {
     pwd)"
   cd \
     "${_dir}"
+  tree .
   gpg \
     --local-user \
       "${_key}" \
     --sign \
     --detach \
-    *".pkg.tar.xz"
+    *".pkg.tar."*
   cd \
     "${_oldpwd}"
 }
@@ -310,7 +311,8 @@ _fur_pub() {
       tmc
   git \
     push \
-      gl
+      gl || \
+    true
       # "${_pkg}"
   cd \
     "${_oldpwd}"

@@ -230,6 +230,7 @@ _pkgs_find() {
   local \
     _dir="${1}" \
     _find_opts=() \
+    _msg=()
   _msg=(
     "looking for packages"
     "in '${_dir}'."
@@ -266,7 +267,8 @@ _fur_sign() {
     _oldpwd \
     _pkgs=() \
     _pkg \
-    _gpg_opts=()
+    _gpg_opts=() \
+    _msg=()
   _oldpwd="$( \
     pwd)"
   _gpg_opts+=(
@@ -281,8 +283,14 @@ _fur_sign() {
     tree \
       "$(pwd)"
   fi
-  _pkgs_find
+  _pkgs_find \
+    "${_dir}"
   for _pkg in "${_pkgs[@]}"; do
+    _msg=(
+      "signing package '${_pkg}'"
+    )
+    _msg_info \
+      "${_msg[*]}"
     gpg \
       "${_gpg_opts[@]}" \
       "${_pkg}"
@@ -353,22 +361,19 @@ _fur_pub() {
       "${_dir}/${_pub}/${_package_dir}"
     rsync \
       -v \
-      "${_packages[@]}" \
+      "${_pkg[@]}" \
       "${_dir}/${_pub}/${_package_dir}"
-    "_${_pub}_sign" \
-      "${_dir}/${_pub}/${_package_dir}" \
-      "${_key}"
-    _msg_info \
-      "entering ${_pub_repo}/${_pub}"
-    cd \
-      "${_pub_repo}/${_pub}"
-    git \
-      add \
-        .
-    git \
-      add \
-        "${_package_dir}"
   done
+  _msg_info \
+    "entering ${_dir}/${_pub}"
+  cd \
+    "${_dir}/${_pub}"
+  "_${_pub}_sign" \
+    "${_dir}/${_pub}/${_package_dir}" \
+    "${_key}"
+  git \
+    add \
+      .
   git \
     commit \
       -a \
@@ -377,12 +382,11 @@ _fur_pub() {
         "publish"
   git \
     push \
-      tmc
+      tmc 
   git \
     push \
       gl || \
     true
-      # "${_pkg}"
   cd \
     "${_oldpwd}"
 }

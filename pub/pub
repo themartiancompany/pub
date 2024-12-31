@@ -106,6 +106,45 @@ _ur_get_opts(){
   )
 }
 
+_fur_repo_clean() {
+  local \
+    _dir="${1}" \
+    _find_opts=() \
+  _msg=(
+    "looking for packages and signatures"
+    "in '${_dir}'."
+  )
+  _msg_info \
+    "${_msg[*]}"
+  _find_opts+=(
+    -type
+      "f"
+    -iwholename
+      "*/${_platform}/*.pkg.*"
+    -print0
+  )
+  _msg=(
+    "running find with options"
+    "'${_find_opts[@]}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  mapfile \
+    -d \
+    $'\0' \
+    _pkgs < \
+    <(find \
+        "${_dir}" \
+	"${_find_opts[@]}" 2>/dev/null || \
+      true)
+  _msg_info \
+    "removing packages and signatures '${_pkgs[*]}'"
+  rm \
+    -rf \
+    "${_pkgs[@]}" || \
+    true
+}
+
 _fur_get() {
   local \
    _dir="${1}" \
@@ -136,23 +175,8 @@ _fur_get() {
   "${_get_cmd}" \
     "${_get_opts[@]}" \
     "${_pub}"
-  # find \
-  #   "${_pub_repo}"
-  _pkgs=( $( \
-    find \
-      "${_pub_repo}" \
-      -iwholename \
-        "*/${_platform}/*.pkg.*" \
-      -exec \
-        echo \
-          '{}' ';')
-  )
-  _msg_info \
-    "removing packages ${_pkgs[*]}"
-  rm \
-    -rf \
-    "${_pkgs[@]}" || \
-    true
+  _fur_repo_clean \
+    "${_pub_repo}"
   cd \
     "${_oldpwd}"
 }
@@ -202,22 +226,67 @@ _lur_get() {
     "${_oldpwd}"
 }
 
+_pkgs_find() {
+  local \
+    _dir="${1}" \
+    _find_opts=() \
+  _msg=(
+    "looking for packages"
+    "in '${_dir}'."
+  )
+  _msg_info \
+    "${_msg[*]}"
+  _find_opts+=(
+    -type
+      "f"
+    -name
+      "*.pkg.*"
+    -print0
+  )
+  _msg=(
+    "running find with options"
+    "'${_find_opts[@]}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  mapfile \
+    -d \
+    $'\0' \
+    _pkgs < \
+    <(find \
+        "${_dir}" \
+	"${_find_opts[@]}" 2>/dev/null || \
+      true)
+}
+
 _fur_sign() {
   local \
     _dir="${1}" \
     _key="${2}" \
-    _oldpwd
+    _oldpwd \
+    _pkgs=() \
+    _pkg \
+    _gpg_opts=()
   _oldpwd="$( \
     pwd)"
+  _gpg_opts+=(
+    --local-user
+      "${_key}"
+    --sign
+    --detach
+  )
   cd \
     "${_dir}"
-  tree .
-  gpg \
-    --local-user \
-      "${_key}" \
-    --sign \
-    --detach \
-    *".pkg.tar."*
+  if [[ "${quiet}" == "n" ]]; then
+    tree \
+      "$(pwd)"
+  fi
+  _pkgs_find
+  for _pkg in "${_pkgs[@]}"; do
+    gpg \
+      "${_gpg_opts[@]}" \
+      "${_pkg}"
+  done
   cd \
     "${_oldpwd}"
 }

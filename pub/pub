@@ -12,10 +12,24 @@ _lib="${_bin}/../lib"
 _share="${_bin}/../share"
 source \
   "${_lib}/libcrash-bash/crash-bash"
+source \
+  "${_lib}/libevm/libevm"
 
 # Check all required programs
 # are available
 _requirements() {
+  _check_cmd \
+    'libevm-requirements' \
+    'libevm'
+  libevm-requirements
+  _check_cmd \
+    'evm-contract-call' \
+    'evm-contracts-tools'
+  _check_cmd \
+    'evm-contract-deployment-networks' \
+    'evm-contracts-tools'
+  _check_cmd \
+    'evm-wallet'
   _check_cmd \
     'git'
 }
@@ -24,6 +38,18 @@ _requirements() {
 _global_variables() {
   publishing_date=()
   local_packages=()
+  package_type=""
+  ur_address=""
+  ur_version=""
+  deployments_dir=""
+  user_level=""
+  wallet_name=""
+  wallet_path=""
+  wallet_password=""
+  wallet_seed=""
+  wallet_address=""
+  target_network=""
+  api_key=""
   repo_dir=""
   repo_origin=""
   pub_plat=""
@@ -502,15 +528,103 @@ _platform_auto_detect() {
     "${_platform}"
 }
 
+_package_type_auto_detect() {
+  local \
+    _type
+  if [[ "${pub_plat}" == "fur" ]]; then
+    _type="binary"
+  elif [[ "${pub_plat}" == "ur" || \
+          "${pub_plat}" == "gur"  ]]; then
+    _type="source"
+  fi
+  _set_override \
+    "package" \
+    "type" \
+    "${_type}"
+}
+
 # Set defaults and, if present, overrides
 # from arch-grub command line option parameters
 _set_overrides() {
   local \
     _msg=()
+  if [[ -v override_color ]]; then
+    color="${override_color}"
+  elif [[ -z "${color}" ]]; then
+    color="n"
+  fi
+  if [[ -v override_quiet ]]; then
+    quiet="${override_quiet}"
+  elif [[ -z "${quiet}" ]]; then
+    quiet="y"
+  fi
   _set_override \
     "publishing" \
     "date" \
     "$(_get_date_human)"
+  _set_override \
+    "wallet" \
+    "name" \
+    "default"
+  _set_override \
+    "user" \
+    "level" \
+    "n"
+  _deployments_dir_auto_detect \
+    "ur" \
+    "$(_get \
+         "user" \
+         "level")"
+  _network_auto_detect \
+    "UserRepository" \
+    "$(_get \
+         "deployments" \
+         "dir")" \
+    "$(_get \
+         "user" \
+         "level")"
+  _api_key_auto_detect \
+    "$(_get \
+         "target" \
+         "network")"
+  _set_override \
+    "wallet" \
+    "path" \
+    "$(_wallet_path_get \
+         "evm-wallet" \
+         "$(_get \
+              "wallet" \
+              "name")")"
+  _secret_auto_detect \
+    "seed" \
+    "seed" \
+    "evm-wallet" \
+    "$(_get \
+         "wallet" \
+         "name")"
+  _secret_auto_detect \
+    "password" \
+    "plain" \
+    "evm-wallet" \
+    "$(_get \
+         "wallet" \
+         "name")"
+  _set_override \
+    "wallet" \
+    "address" \
+    "$(evm-wallet \
+         get \
+           "$(_get \
+                "wallet" \
+                "name")" \
+           "address")"
+  _contract_setup_auto_detect \
+    "ur" \
+    "UserRepository" \
+    "ur" \
+    "${target_network}" \
+    "${user_level}" \
+    "${deployments_dir}"
   _set_override \
     "repo" \
     "dir" \
@@ -522,7 +636,8 @@ _set_overrides() {
   _set_override \
     "pub" \
     "plat" \
-    "fur"
+    "ur"
+  _package_type_auto_detect
   _set_override \
     "pub" \
     "dir" \
@@ -543,16 +658,6 @@ _set_overrides() {
     "target" \
     "platform" \
     "$(_platform_auto_detect)"
-  if [[ -v override_color ]]; then
-    color="${override_color}"
-  elif [[ -z "${color}" ]]; then
-    color="n"
-  fi
-  if [[ -v override_quiet ]]; then
-    quiet="${override_quiet}"
-  elif [[ -z "${quiet}" ]]; then
-    quiet="y"
-  fi
   if [[ "${local_packages[*]}" == "" ]]; then
     local_packages+=(
       "$(basename \
@@ -572,6 +677,20 @@ _set_overrides() {
 # $1: exit status number.
 _usage() {
   local \
+    _ur \
+    _ur_deployment \
+    _networks \
+    _usage_text
+  _ur="UserRepository"
+  _ur_deployment="$( \
+    _get \
+      "deployments" \
+      "dir")/${_ur}"
+  _networks="$( \
+    evm-contract-deployment-networks \
+      -A \
+      "${_ur_deployment}")"
+  local \
     _usage_text
   IFS='' \
     read \
@@ -580,29 +699,64 @@ _usage() {
       _usage_text << \
         ENDUSAGETEXT || true
 
+Build recipes and binary packages publisher tool.
+
 Usage:
   $(_get "app" "name")
     [options]
     [packages]
+
+  networks:
+$(_display_networks \
+     "${_networks[*]}")
+
   options:
-     -d                   Repo directory.
-			  Default: $(_get "repo" "dir")
-     -s <origin>          Repo origin.
-			  Default: $(_get "repo" "origin")
-     -p <publisher>       Publishing platform.
-			  Default: $(_get "pub" "plat")
-     -k                   OpenPG signature key.
-			  Default: $(_get "pgp" "key")
-     -e                   OpenPG signature email.
-			  Default: $(_get "pgp" "email")
-     -o                   Output directory.
-			  Default: $(_get "output" "dir")
-     -P <platform>        Platform for which the package
-			  is built ('arch', 'termux').
-			  Default: $(_get "target" "platform")
-     -c                   Colors.
-     -h                   This message.
-     -v                   Enable verbose output
+     -A <ur_address>           Address of the 'User Repository
+                               Publishers' contract on the
+                               network.
+                               Default: $(_get "ur" "address")
+     -V <ur_version>           Version of the target 'User Repository
+                               Publishers' contract.
+                               Default: $(_get "ur" "version")
+     -u                        Whether to retrieve publishers' contract
+                               address from user directory or custom
+                               deployment.
+                               Default: $(_get "user" "level")
+     -d <deployments_dir>      Contracts deployments directory.
+                               Default: $(_get "deployments" "dir")
+     -N <wallet_name>          Wallet name.
+                               Default: $(_get "wallet" "name")
+     -w <wallet_path>          Wallet path.
+                               Default: $(_get "wallet" "path")
+     -p <wallet_password>      Wallet password.
+                               Default: $(_get "wallet" "password")
+     -s <wallet_seed>          Wallet seed path.
+                               Default: $(_get "wallet" "seed")
+     -n <network>              EVM network name (${_networks[*]}).
+                               Default: $(_get "target" "network")
+     -k <api_key>              Etherscan-like service key.
+                               Default: $(_get "api" "key")
+     -C <repo_dir>             Repo directory.
+			       Default: $(_get "repo" "dir")
+     -S <origin>               Repo origin.
+			       Default: $(_get "repo" "origin")
+     -p <publishing_platform>  Publishing platform.
+                               It can be 'ur', 'gur', 'fur'.
+			       Default: $(_get "pub" "plat")
+     -k                        OpenPG signature key.
+			       Default: $(_get "pgp" "key")
+     -e                        OpenPG signature email.
+			       Default: $(_get "pgp" "email")
+     -o                        Output directory.
+			       Default: $(_get "output" "dir")
+     -P <computing_platform>   Life or DogeOS base platform for
+                               which the binary package is built
+			       ('arch', 'termux').
+			       Default: $(_get "target" "platform")
+
+     -c                        Colors.
+     -h                        This message.
+     -v                        Enable verbose output
 ENDUSAGETEXT
   _printf \
     '%s\n' \
@@ -614,16 +768,28 @@ ENDUSAGETEXT
 # Shows configuration options.
 _show_config() {
   _msg_info "${app_name} configuration"
-  _msg_info "          Publishing date:   $(_get "publishing" "date")"
-  _msg_info "              Repo origin:   $(_get "repo" "origin")"
-  _msg_info "           Repo directory:   $(_get "repo" "dir")"
-  _msg_info "      Publishing platform:   $(_get "pub" "plat")"
-  _msg_info "     Publishing directory:   $(_get "pub" "dir")"
-  _msg_info "          Target platform:   $(_get "target" "platform")"
-  _msg_info "            Signature key:   $(_get "pgp" "key")"
-  _msg_info "          Signature email:   $(_get "pgp" "email")"
-  _msg_info "                 Packages:   $(_get "local" "packages")"
-  _msg_info "         Output directory:   $(_get "output" "dir")"
+  _msg_info "          Publishing date:   ${publishing_date}"
+  _msg_info "             Package type:   ${package_type}"
+  _msg_info "              Repo origin:   ${repo_origin}"
+  _msg_info "           Repo directory:   ${repo_dir}"
+  _msg_info "      Publishing platform:   ${pub_plat}"
+  _msg_info "  User Repository address:   ${ur_address}"
+  _msg_info "  User Repository version:   ${ur_version}"
+  _msg_info "               User level:   ${user_level}"
+  _msg_info "    Deployments directory:   ${deployments_dir}"
+  _msg_info "           Wallet address:   ${wallet_address}"
+  _msg_info "              Wallet name:   ${wallet_name}"
+  _msg_info "              Wallet path:   ${wallet_path}"
+  _msg_info "          Wallet password:   ${wallet_password}"
+  _msg_info "              Wallet seed:   ${wallet_seed}"
+  _msg_info "           Target network:   ${target_network}"
+  _msg_info "                  API key:   ${api_key}"
+  _msg_info "     Publishing directory:   ${pub_dir}"
+  _msg_info "          Target platform:   ${target_platform}"
+  _msg_info "            Signature key:   ${pgp_key}"
+  _msg_info "          Signature email:   ${pgp_email}"
+  _msg_info "                 Packages:   ${local_packages[*]}"
+  _msg_info "         Output directory:   ${output_dir}"
 }
 
 _globals
@@ -633,16 +799,26 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'd:s:p:k:e:w:o:P:cvh?' \
+    'A:V:ud:N:w:w:p:s:n:k:C:p:K:E:W:o:P:cvh?' \
     arg; do
   case \
     "${arg}" in
-    d) override_repo_dir="${OPTARG}" ;;
+    A) override_ur_address="${OPTARG}" ;;
+    V) override_ur_version="${OPTARG}" ;;
+    u) override_user_level="y" ;;
+    d) override_deployments_dir="${OPTARG}" ;;
+    N) override_wallet_name="${OPTARG}" ;;
+    w) override_wallet_path="${OPTARG}" ;;
+    p) override_wallet_password="${OPTARG}" ;;
+    s) override_wallet_seed="${OPTARG}" ;;
+    n) override_target_network="${OPTARG}" ;;
+    k) override_api_key="${OPTARG}" ;;
+    C) override_repo_dir="${OPTARG}" ;;
     s) override_repo_origin="${OPTARG}" ;;
     p) override_pub_platform="${OPTARG}" ;;
-    k) override_pgp_key="${OPTARG}" ;;
-    e) override_pgp_email="${OPTARG}" ;;
-    w) override_pub_dir="${OPTARG}" ;;
+    K) override_pgp_key="${OPTARG}" ;;
+    E) override_pgp_email="${OPTARG}" ;;
+    W) override_pub_dir="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
     P) override_target_platform="${OPTARG}" ;;
     c) override_color="y" ;;
@@ -668,10 +844,12 @@ local_packages=(
   $@
 )
 _config_user_init \
-  "pub"
+  "${app_name}"
 _set_overrides
 _show_config
 app_opts=(
+  "${ur_address}"
+  "${ur_version}"
   "${output_dir}"
   "${repo_dir}"
   "${repo_origin}"

@@ -343,6 +343,19 @@ _fur_sign() {
     "${_oldpwd}"
 }
 
+_ur_pub() {
+  local \
+    _target_network="${1}" \
+    _up_address="${2}" \
+    _abi="${3}" \
+    _bytecode="${4}" \
+    _compiler_output="${5}" \
+    _work_dir="${6}" \
+    _gnupg_home="${7}" \
+    _keys_update="${8}" \
+    _msg=()
+}
+
 _fur_pub() {
   local \
     _dir="${1}" \
@@ -435,6 +448,31 @@ _fur_pub() {
     "${_oldpwd}"
 }
 
+_pub_opts_get() {
+  if [[ "${_pub_plat}" == "ur" ]]; then
+    _pub_opts+=(
+      "${_target_network}"
+      "${_up_address}"
+      "${_up_abi}"
+      "${_up_bytecode}"
+      "${_up_compiler_output}"
+      "${_work_dir}"
+      "${_gnupg_home}"
+      "${_pkg}"
+      "${_key}"
+    )
+  elif [[ "${_pub_plat}" == "fur" ]]; then
+    _pub_opts+=(
+      "${_pub_repo}" \
+      "${_pkg}" \
+      "${_key}" \
+      "${_platform}" \
+      "${_src_pkgs[@]}"
+    )
+  fi
+
+}
+
 # $@: packages
 _pub() {
   local \
@@ -460,7 +498,7 @@ _pub() {
     _packages=() \
     _pkgs=() \
     _get_opts=() \
-    _opts=() \
+    _pub_opts=() \
     _pkg \
     _pub_repo \
     _tmp_dir \
@@ -497,19 +535,22 @@ _pub() {
     _pub_repo="$( \
       mktemp \
         -d)"
-    "_${_origin}_get" \
-      "${_repo}" \
-      "${_platform}" || \
-      echo \
-       "no get function for ${_origin}"
-    _get_opts=()
-    "_${_pub}_get" \
-      "${_pub_repo}" \
-      "${_platform}" || \
-      echo "hi"
+    if [[ "${_package_type}" == "binary" ]]; then
+      "_${_origin}_get" \
+        "${_repo}" \
+        "${_platform}" || \
+        echo \
+         "no get function for ${_origin}"
+      _get_opts=()
+      "_${_pub_plat}_get" \
+        "${_pub_repo}" \
+        "${_platform}" || \
+        echo "hi"
+    fi
     _msg_info \
        "publishing packages ${_src_pkgs[*]}"
-    "_${_pub}_pub" \
+    _pub_args_get
+    "_${_pub_plat}_pub" \
       "${_pub_repo}" \
       "${_pkg}" \
       "${_key}" \
@@ -852,10 +893,11 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'A:V:ud:N:w:w:p:s:n:k:C:p:K:E:W:o:P:cvh?' \
+    't:A:V:ud:N:w:w:p:s:n:k:C:p:K:E:W:o:P:cvh?' \
     arg; do
   case \
     "${arg}" in
+    t) override_package_type="${OPTARG}" ;;
     A) override_ur_address="${OPTARG}" ;;
     V) override_ur_version="${OPTARG}" ;;
     u) override_user_level="y" ;;

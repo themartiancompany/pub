@@ -58,7 +58,7 @@ _global_variables() {
   target_platform=""
   target_arch=""
   pub_dir=""
-  pgp_key=""
+  pgp_fingerprint=""
   pgp_email=""
   output_dir=""
   color=""
@@ -307,7 +307,8 @@ _pkgs_find() {
 _fur_sign() {
   local \
     _dir="${1}" \
-    _key="${2}" \
+    _fingerprint="${2}" \
+    _detach="${3}" \
     _oldpwd \
     _pkgs=() \
     _pkg \
@@ -317,10 +318,14 @@ _fur_sign() {
     pwd)"
   _gpg_opts+=(
     --local-user
-      "${_key}"
+      "${_fingerprint}"
     --sign
-    --detach
   )
+  if [[ "${_detach}" == "y" ]]; then
+    _gpg_opts+=(
+      --detach
+    )
+  fi
   cd \
     "${_dir}"
   if [[ "${quiet}" == "n" ]]; then
@@ -360,16 +365,18 @@ _fur_pub() {
   local \
     _dir="${1}" \
     _pkg="${2}" \
-    _key="${3}" \
+    _fingerprint="${3}" \
     _platform="${4}" \
     _packages=() \
     _package \
-    _oldpwd
+    _oldpwd \
+    _signature_detached
   shift \
     4
   _packages+=(
     "$@"
   )
+  _signature_detached="y"
   _oldpwd="$( \
     pwd)"
   _msg_info \
@@ -427,7 +434,8 @@ _fur_pub() {
     "${_dir}/${_pub}"
   "_${_pub}_sign" \
     "${_dir}/${_pub}/${_package_dir}" \
-    "${_key}"
+    "${_pgp_fingerprint}" \
+    "${_signature_detached}"
   git \
     add \
       .
@@ -492,7 +500,7 @@ _pub() {
     _origin="${14}" \
     _pub_plat="${15}" \
     _gnupg_home="${16}" \
-    _key="${17}" \
+    _pgp_fingerprint="${17}" \
     _email="${18}" \
     _platform="${19}" \
     _packages=() \
@@ -553,7 +561,7 @@ _pub() {
     "_${_pub_plat}_pub" \
       "${_pub_repo}" \
       "${_pkg}" \
-      "${_key}" \
+      "${_pgp_fingerprint}" \
       "${_platform}" \
       "${_src_pkgs[@]}"
   done
@@ -561,10 +569,11 @@ _pub() {
     "${OLDPWD}"
 }
 
-_detect_pgp_key() {
+_pgp_fingerprint_auto_detect() {
   local \
-    _config
-  _config="$( \
+    _fingerprint
+  if [[ "${pub_plat}" == "fur" ]]; then
+  _fingerprint="$( \
     git \
       config \
         --list | \
@@ -572,27 +581,37 @@ _detect_pgp_key() {
         signingkey | \
         awk \
           -F \
-	    "=" \
-	  '{print $2}')"
-  echo \
-    "${_config}"
+            "=" \
+          '{print $2}')"
+  fi
+  _set_override \
+    "pgp" \
+    "fingerprint" \
+    "fingerprint"
 }
 
-_detect_pgp_email() {
+_pgp_email_auto_detect() {
   local \
-    _config
-  _config="$( \
-    git \
-      config \
-        --list | \
-      grep \
-        email | \
-        awk \
-          -F \
-	    "=" \
-	  '{print $2}')"
-  echo \
-    "${_config}"
+    _email
+  if [[ "${pub_plat}" == "ur" ]]; then
+    echo \
+      "hi"
+  elif [[ "${pub_plat}" == "fur" ]]; then
+    _email="$( \
+      git \
+        config \
+          --list | \
+        grep \
+          email | \
+          awk \
+            -F \
+              "=" \
+            '{print $2}')"
+  fi
+  _set_override \
+    "pgp" \
+    "email" \
+    "${_email}"
 }
 
 _platform_auto_detect() {
@@ -728,18 +747,13 @@ _set_overrides() {
     "cache" \
     "dir" \
     "$(_cache_dir_auto_detect)"
+  _gnupg_home_auto_detect
   _set_override \
     "gnupg" \
     "home" \
     "${HOME}/.config/ur/publishers/gnupg"
-  _set_override \
-    "pgp" \
-    "key" \
-    "$(_detect_pgp_key)"
-  _set_override \
-    "pgp" \
-    "email" \
-    "$(_detect_pgp_email)"
+  _pgp_email_auto_detect
+  _pgp_fingerprint_auto_detect
   _set_override \
     "output" \
     "dir" \
@@ -836,7 +850,7 @@ $(_display_networks \
      -H <gnupg_home>           GNUPG home directory.
                                Default: ${gnupg_home}
      -K <fingerprint>          OpenPG signature key.
-                               Default: $(_get "pgp" "key")
+                               Default: ${pgp_fingerprint}
      -E <email_like_id>        OpenPG signature email.
                                Default: ${pgp_email}
      -o <output_dir>           Output directory.
@@ -880,7 +894,7 @@ _show_config() {
   _msg_info "     Publishing directory:   ${pub_dir}"
   _msg_info "          GNUPG directory:   ${gnupg_home}"
   _msg_info "          Target platform:   ${target_platform}"
-  _msg_info "            Signature key:   ${pgp_key}"
+  _msg_info "            Signature key:   ${pgp_fingerprint}"
   _msg_info "          Signature email:   ${pgp_email}"
   _msg_info "                 Packages:   ${local_packages[*]}"
   _msg_info "         Output directory:   ${output_dir}"
@@ -912,7 +926,7 @@ while \
     s) override_repo_origin="${OPTARG}" ;;
     p) override_pub_platform="${OPTARG}" ;;
     H) override_gnupg_home="${OPTARG}" ;;
-    K) override_pgp_key="${OPTARG}" ;;
+    K) override_pgp_fingerprint="${OPTARG}" ;;
     E) override_pgp_email="${OPTARG}" ;;
     W) override_pub_dir="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
@@ -960,7 +974,7 @@ app_opts=(
   "${repo_origin}"
   "${pub_plat}"
   "${gnupg_home}"
-  "${pgp_key}"
+  "${pgp_fingerprint}"
   "${pgp_email}"
   "${target_platform}"
   "${local_packages[@]}"

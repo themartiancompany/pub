@@ -50,6 +50,7 @@ _global_variables() {
   wallet_address=""
   target_network=""
   api_key=""
+  cache_dir=""
   repo_dir=""
   repo_origin=""
   pub_plat=""
@@ -61,6 +62,22 @@ _global_variables() {
   output_dir=""
   color=""
   quiet=""
+}
+
+_conf_dir_auto_detect() {
+  local \
+    _dir
+  _dir="${HOME}/.config/${app_name}"
+  echo \
+    "${_dir}"
+}
+
+_cache_dir_auto_detect() {
+  local \
+    _dir
+  _dir="${HOME}/.cache/${app_name}"
+  echo \
+    "${_dir}"
 }
 
 _get_arch() {
@@ -420,13 +437,25 @@ _fur_pub() {
 # $@: packages
 _pub() {
   local \
-    _output_dir="${1}" \
-    _repo="${2}" \
-    _origin="${3}" \
-    _pub="${4}" \
-    _key="${5}" \
-    _email="${6}" \
-    _platform="${7}" \
+    _package_type="${1}" \
+    _ur_address="${2}" \
+    _ur_version="${3}" \
+    _deployments_dir="${4}" \
+    _wallet_name="${5}" \
+    _wallet_path="${6}" \
+    _wallet_password="${7}" \
+    _wallet_seed="${8}" \
+    _target_network="${9}" \
+    _api_key_path="${10}" \
+    _cache_dir="${11}" \
+    _output_dir="${12}" \
+    _repo="${13}" \
+    _origin="${14}" \
+    _pub="${15}" \
+    _gnupg_home="${16}" \
+    _key="${17}" \
+    _email="${18}" \
+    _platform="${19}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
@@ -435,7 +464,7 @@ _pub() {
     _pub_repo \
     _tmp_dir
   shift \
-    7
+    19
   _packages=(
     "$@"
   )
@@ -643,6 +672,14 @@ _set_overrides() {
     "dir" \
     "${HOME}"
   _set_override \
+    "cache" \
+    "dir" \
+    "$(_cache_dir_auto_detect)"
+  _set_override \
+    "gnupg" \
+    "home" \
+    "${HOME}/.config/ur/publishers/gnupg"
+  _set_override \
     "pgp" \
     "key" \
     "$(_detect_pgp_key)"
@@ -784,7 +821,9 @@ _show_config() {
   _msg_info "              Wallet seed:   ${wallet_seed}"
   _msg_info "           Target network:   ${target_network}"
   _msg_info "                  API key:   ${api_key}"
+  _msg_info "          Cache directory:   ${cache_dir}"
   _msg_info "     Publishing directory:   ${pub_dir}"
+  _msg_info "          GNUPG directory:   ${gnupg_home}"
   _msg_info "          Target platform:   ${target_platform}"
   _msg_info "            Signature key:   ${pgp_key}"
   _msg_info "          Signature email:   ${pgp_email}"
@@ -816,6 +855,7 @@ while \
     C) override_repo_dir="${OPTARG}" ;;
     s) override_repo_origin="${OPTARG}" ;;
     p) override_pub_platform="${OPTARG}" ;;
+    H) override_gnupg_home="${OPTARG}" ;;
     K) override_pgp_key="${OPTARG}" ;;
     E) override_pgp_email="${OPTARG}" ;;
     W) override_pub_dir="${OPTARG}" ;;
@@ -848,12 +888,22 @@ _config_user_init \
 _set_overrides
 _show_config
 app_opts=(
+  "${package_type}"
   "${ur_address}"
   "${ur_version}"
+  "${deployments_dir}"
+  "${wallet_name}"
+  "${wallet_path}"
+  "${wallet_password}"
+  "${wallet_seed}"
+  "${target_network}"
+  "${api_key}"
+  "${cache_dir}"
   "${output_dir}"
   "${repo_dir}"
   "${repo_origin}"
   "${pub_plat}"
+  "${gnupg_home}"
   "${pgp_key}"
   "${pgp_email}"
   "${target_platform}"

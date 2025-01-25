@@ -51,6 +51,7 @@ _global_variables() {
   target_network=""
   api_key=""
   cache_dir=""
+  gnupg_home=""
   repo_dir=""
   repo_origin=""
   pub_plat=""
@@ -751,45 +752,47 @@ $(_display_networks \
      -A <ur_address>           Address of the 'User Repository
                                Publishers' contract on the
                                network.
-                               Default: $(_get "ur" "address")
+                               Default: ${ur_address}
      -V <ur_version>           Version of the target 'User Repository
                                Publishers' contract.
-                               Default: $(_get "ur" "version")
+                               Default: ${ur_version}
      -u                        Whether to retrieve publishers' contract
                                address from user directory or custom
                                deployment.
-                               Default: $(_get "user" "level")
+                               Default: ${user_level}
      -d <deployments_dir>      Contracts deployments directory.
-                               Default: $(_get "deployments" "dir")
+                               Default: ${deployments_dir}
      -N <wallet_name>          Wallet name.
-                               Default: $(_get "wallet" "name")
+                               Default: ${wallet_name}
      -w <wallet_path>          Wallet path.
-                               Default: $(_get "wallet" "path")
+                               Default: ${wallet_path}
      -p <wallet_password>      Wallet password.
-                               Default: $(_get "wallet" "password")
+                               Default: ${wallet_password}
      -s <wallet_seed>          Wallet seed path.
-                               Default: $(_get "wallet" "seed")
+                               Default: ${wallet_seed}
      -n <network>              EVM network name (${_networks[*]}).
-                               Default: $(_get "target" "network")
+                               Default: ${target_network}
      -k <api_key>              Etherscan-like service key.
-                               Default: $(_get "api" "key")
+                               Default: ${api_key}
      -C <repo_dir>             Repo directory.
-			       Default: $(_get "repo" "dir")
+                               Default: ${repo_dir}
      -S <origin>               Repo origin.
-			       Default: $(_get "repo" "origin")
+                               Default: ${repo_origin}
      -p <publishing_platform>  Publishing platform.
                                It can be 'ur', 'gur', 'fur'.
-			       Default: $(_get "pub" "plat")
-     -k                        OpenPG signature key.
-			       Default: $(_get "pgp" "key")
-     -e                        OpenPG signature email.
-			       Default: $(_get "pgp" "email")
-     -o                        Output directory.
-			       Default: $(_get "output" "dir")
+                               Default: ${pub_plat}
+     -H <gnupg_home>           GNUPG home directory.
+                               Default: ${gnupg_home}
+     -K <fingerprint>          OpenPG signature key.
+                               Default: $(_get "pgp" "key")
+     -E <email_like_id>        OpenPG signature email.
+                               Default: ${pgp_email}
+     -o <output_dir>           Output directory.
+                               Default: ${output_dir}
      -P <computing_platform>   Life or DogeOS base platform for
                                which the binary package is built
 			       ('arch', 'termux').
-			       Default: $(_get "target" "platform")
+                               Default: ${target_platform}
 
      -c                        Colors.
      -h                        This message.

@@ -452,7 +452,7 @@ _pub() {
     _output_dir="${12}" \
     _repo="${13}" \
     _origin="${14}" \
-    _pub="${15}" \
+    _pub_plat="${15}" \
     _gnupg_home="${16}" \
     _key="${17}" \
     _email="${18}" \
@@ -463,12 +463,23 @@ _pub() {
     _opts=() \
     _pkg \
     _pub_repo \
-    _tmp_dir
+    _tmp_dir \
+    _msg=()
   shift \
     19
   _packages=(
     "$@"
   )
+  if [[ "${_package_type}" == "source" && \
+        "${_pub_plat}" == "fur" ]]; then
+    _msg=(
+      "The fur is a binary package publishing"
+      "platform."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
   if [[ "${_repo}" == "" ]]; then
     _repo="$( \
       mktemp \

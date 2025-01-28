@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 PREFIX ?= /usr/local
-DOC_DIR=$(DESTDIR)$(PREFIX)/share/doc/pub
-DATA_DIR=$(DESTDIR)$(PREFIX)/share/pub
+_PROJECT=pub
+DATA_DIR=$(DESTDIR)$(PREFIX)/share/$(_PROJECT)
+DOC_DIR=$(DESTDIR)$(PREFIX)/share/doc/$(_PROJECT)
+MAN_DIR?=$(DESTDIR)$(PREFIX)/share/man
 BIN_DIR=$(DESTDIR)$(PREFIX)/bin
 
 DOC_FILES=$(wildcard *.rst)
@@ -16,15 +18,30 @@ check: shellcheck
 shellcheck:
 	shellcheck -s bash $(SCRIPT_FILES)
 
-install: install-pub install-doc
+install: install-$(_PROJECT) install-doc
 
 install-doc:
 
-	install -vDm 644 $(DOC_FILES) -t $(DOC_DIR)
+	install \
+	  -vDm644 \
+	  $(DOC_FILES) \
+	  -t \
+	  $(DOC_DIR)
 
 install-pub:
 
-	install -vdm 755 "$(BIN_DIR)"
-	install -vDm 755 pub/pub "$(BIN_DIR)"
+	install \
+	  -vdm755 \
+	  "$(BIN_DIR)"
+	install \
+	  -vDm755 \
+	  "$(_PROJECT)/$(_PROJECT)" \
+	  "$(BIN_DIR)"
 
-.PHONY: check install install-doc install-pub shellcheck
+man:
+
+	rst2man \
+	  "man/$(_PROJECT).1.rst" \
+	  "$(MAN_DIR))/man1/$(_PROJECT).1
+
+.PHONY: check install install-doc install-pub man shellcheck

@@ -18,6 +18,8 @@ source \
 # Check all required programs
 # are available
 _requirements() {
+  local \
+    _zlib
   _check_cmd \
     'evm-contract-call' \
     'evm-contracts-tools'
@@ -29,8 +31,11 @@ _requirements() {
   _check_cmd \
     'git'
   _check_cmd \
-    'gpg' \
-    'gnupg'
+    'evm-gpg' \
+    'evm-gnupg'
+  _check_cmd \
+    'find' \
+    'findutils'
   _check_cmd \
     'gpg-key-info'
   _check_cmd \
@@ -39,6 +44,22 @@ _requirements() {
   libevm-requirements
   _check_cmd \
     'rsync'
+  _check_cmd \
+    'tar'
+  _zlib="$( \
+    find \
+      "$(_get_lib)/libz."* \
+      -type \
+        "f" \
+        2>/dev/null || \
+    true)"
+  if [[ "${_zlib}" == "" ]]; then
+    _msg_error \
+      "No Zlib library detected." \
+      1
+  fi
+  _check_cmd \
+    'ur'
 }
 
 # shellcheck disable=SC2034
@@ -366,7 +387,7 @@ _ur_sign() {
       "${_key_fingerprint}"
     --sign
     --output
-      "${_source_repo}/${_pkg}.gpg"
+      "${_source_repo}/${_pkg}.tar.xz.gpg"
   )
   if [[ "${quiet}" == "n" ]]; then
     tree \
@@ -374,7 +395,60 @@ _ur_sign() {
   fi
   gpg \
     "${_gpg_opts[@]}" \
-    "${_source_repo}/${_pkg}"
+    "${_source_repo}/${_pkg}.tar.xz"
+}
+
+_ur_compress() {
+  local \
+    _source_dir="${1}" \
+    _pkg="${2}"
+  XZ_OPT="-e9" \
+  tar \
+    'cfJ' \
+    "${_source_dir}/${_pkg}.tar.xz" \
+    "${_source_dir}/${_pkg}"
+}
+
+_ur_upload() {
+  local \
+    _source_dir="${1}" \
+    _pkg="${2}" \
+    _wallet_name="${4}" \
+    _wallet_path="${5}" \
+    _wallet_password="${6}" \
+    _wallet_seed="${7}" \
+    _target_network="${8}" \
+    _api_key_path="${9}" \
+    _evmfs_opts=()
+  if [[ "$EVMFS_OPTS" == "" ]]; then
+    _evmfs_opts+=(
+      -N
+        "${_wallet_name}"
+      -w
+        "${_wallet_path}"
+      -p
+        "${_wallet_password}"
+      -s
+        "${_wallet_seed}"
+      -n
+        "${_target_network}"
+      -k
+        "${_api_key_path}"
+    )
+  else
+    _evmfs_opts+=(
+      $EVMFS_OPTS
+    )
+  fi
+  if [[ "${quiet}" == "n" ]]; then
+    _evmfs_opts+=(
+      -v
+    )
+  fi
+  evmfs \
+    "${_evmfs_opts[@]}" \
+    publish \
+    "${_source_dir}/${_pkg}.tar.xz.gpg"
 }
 
 _ur_pub() {
@@ -421,11 +495,23 @@ _ur_pub() {
       "${_target_network}" \
       "UserRepository" \
       "${_ur_version}")"
+  _ur_compress \
+    "${_work_dir}" \
+    "${_pkg}"
   _ur_sign \
     "${_work_dir}" \
     "${_pkg}" \
     "${_gnupg_home}" \
     "${_key_fingerprint}"
+  _ur_upload \
+    "${_work_dir}" \
+    "${_pkg}" \
+    "${_wallet_name}" \
+    "${_wallet_path}" \
+    "${_wallet_password}" \
+    "${_wallet_seed}" \
+    "${_target_network}" \
+    "${_api_key_path}"
   tree \
     "${_work_dir}"
 }
@@ -1000,7 +1086,7 @@ _set_overrides() {
   _set_override \
     "target" \
     "price" \
-    "1"
+    "0"
   _set_override \
     "measure" \
     "unit" \
@@ -1032,7 +1118,7 @@ _set_overrides() {
   _set_override \
     "gnupg" \
     "home" \
-    "${HOME}/.config/ur/publishers/gnupg"
+    "${HOME}/.config/evm-gnupg"
   _pgp_email_auto_detect
   _pgp_fingerprint_auto_detect
   _set_override \
@@ -1188,6 +1274,8 @@ _show_config() {
   _msg_info "          Target platform:   ${target_platform}"
   _msg_info "            Signature key:   ${pgp_fingerprint}"
   _msg_info "          Signature email:   ${pgp_email}"
+  _msg_info "             Target price:   ${target_price}"
+  _msg_info "             Measure unit:   ${measure_unit}"
   _msg_info "                 Packages:   ${local_packages[*]}"
   _msg_info "         Output directory:   ${output_dir}"
 }

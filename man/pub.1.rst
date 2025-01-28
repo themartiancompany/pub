@@ -34,3 +34,4 @@ See also
 
 * pub -h
 
+.. include:: variables.rst

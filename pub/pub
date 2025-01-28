@@ -605,6 +605,33 @@ _binary_packages_tmp_dir_setup() {
     "${_binary_packages_tmp_dir}"
 }
 
+_pub_repo_setup() {
+  local \
+    _msg=() \
+    _tmp_dir
+  _tmp_dir="${_cache_dir}/publish"
+  _pub_repo="$( \
+    mktemp \
+      -d \
+      -p \
+        "${_tmp_dir}")"
+  _msg=(
+    "setting up temporary"
+    "publication repository directory"
+    "'${_pub_repo}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  mkdir \
+    -p \
+    "${_pub_repo}"
+  chmod \
+    700 \
+    "${_pub_repo}"
+}
+
+
+
 _source_tmp_dir_setup() {
   local \
     _msg=() \
@@ -708,14 +735,13 @@ _pub() {
     in "${_packages[@]}"; do
     _msg_info \
       "Package '${_pkg}'."
-    _binary_packages_tmp_dir_setup
-    _binary_packages_tmp_dir="$( \
-      mktemp \
-        -d)"
-    _pub_repo="$( \
-      mktemp \
-        -d)"
+    _pub_repo_setup
     if [[ "${_package_type}" == "binary" ]]; then
+      _binary_packages_tmp_dir_setup
+      _binary_packages_tmp_dir="$( \
+        mktemp \
+          -d)"
+
       "_${_origin}_binary_package_get" \
         "${_repo_dir}" \
         "${_platform}" || \
@@ -772,7 +798,7 @@ _key_latest_select() {
     "${_msg[*]}"
   _msg=(
     "looking for own signatures"
-    "in '${_dir}'."
+    "in '${_keyserver_receive_dir}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -810,7 +836,7 @@ _key_latest_select() {
     gpg-key-info \
       -o \
         "fingerprint" \
-      "${_key_sorted[-1]}")"
+      "${_keys_sorted[-1]}")"
 }
 
 _key_git_select() {
@@ -936,7 +962,7 @@ _set_overrides() {
     "${user_level}"
   _network_auto_detect \
     "UserRepository" \
-    "${deployments_dir}"
+    "${deployments_dir}" \
     "${user_level}"
   _api_key_auto_detect \
     "${target_network}"

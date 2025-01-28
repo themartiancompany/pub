@@ -506,6 +506,15 @@ _publish_call_opts_setup() {
   )
 }
 
+_ether_to_wei() {
+  local \
+    _ether="${1}" \
+    _unit
+  _scale=1000000000000000000
+  echo \
+    "$((_ether * _scale))"
+}
+
 _ur_pub() {
   local \
     _ur_address="${1}" \
@@ -519,10 +528,11 @@ _ur_pub() {
     _api_key_path="${9}" \
     _target_publisher="${10}" \
     _target_price="${11}" \
-    _work_dir="${12}" \
-    _gnupg_home="${13}" \
-    _key_fingerprint="${14}" \
-    _package="${15}" \
+    _measure_unit="${12}" \
+    _work_dir="${13}" \
+    _gnupg_home="${14}" \
+    _key_fingerprint="${15}" \
+    _package="${16}" \
     _msg=() \
     _abi \
     _bytecode \
@@ -571,6 +581,11 @@ _ur_pub() {
     "${_target_network}" \
     "${_api_key_path}"
   _publish_call_opts_setup
+  if [[ "${_measure_unit}" == "ether" ]]; then
+    _target_price="$( \
+      _ether_to_wei \
+        "${_target_price}")"
+  fi
   evm-contract-call \
     "${_publish_call_opts[@]}" \
     "${_ur_address}" \
@@ -693,6 +708,7 @@ _pub_opts_setup() {
       "${_api_key_path}"
       "${_target_publisher}"
       "${_target_price}"
+      "${_measure_unit}"
       "${_source_tmp_dir}"
       "${_gnupg_home}"
       "${_key_fingerprint}"
@@ -1288,7 +1304,8 @@ $(_display_networks \
      -M <target_price>         Target price for the package.
                                Default: ${target_price}
      -m <measure_unit>         Measure unit for the network
-                               currency.
+                               currency. It can be 'ether'
+			       and 'wei'.
                                Default: ${measure_unit}
      -H <gnupg_home>           GNUPG home directory.
                                Default: ${gnupg_home}

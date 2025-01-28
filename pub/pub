@@ -437,7 +437,7 @@ _ur_upload() {
   )
   _msg_info \
     "${_msg[*]}"
-  if [[ ! -v "$EVMFS_OPTS" ]]; then
+  if [[ ! -v "EVMFS_OPTS" ]]; then
     _evmfs_opts+=(
       -N
         "${_wallet_name}"

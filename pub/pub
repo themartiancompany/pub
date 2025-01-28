@@ -302,7 +302,7 @@ _pkgs_find() {
 
 _fur_sign() {
   local \
-    _dir="${1}" \
+    _binary_repo_dir="${1}" \
     _fingerprint="${2}" \
     _detach="${3}" \
     _oldpwd \
@@ -323,13 +323,13 @@ _fur_sign() {
     )
   fi
   cd \
-    "${_dir}"
+    "${_binary_repo_dir}"
   if [[ "${quiet}" == "n" ]]; then
     tree \
       "$(pwd)"
   fi
   _pkgs_find \
-    "${_dir}"
+    "${_binary_repo_dir}"
   for _pkg in "${_pkgs[@]}"; do
     _msg=(
       "signing package '${_pkg}'"
@@ -424,6 +424,8 @@ _ur_pub() {
     "${_pkg}" \
     "${_gnupg_home}" \
     "${_key_fingerprint}"
+  tree \
+    "${_work_dir}"
 }
 
 _fur_pub() {

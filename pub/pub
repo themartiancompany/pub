@@ -401,7 +401,15 @@ _ur_sign() {
 _ur_compress() {
   local \
     _source_dir="${1}" \
-    _pkg="${2}"
+    _pkg="${2}" \
+    _msg=()
+  _msg=(
+    "Compressing source recipe"
+    "repository for package"
+    "'${_pkg}'."
+  )
+  _msg_info \
+    "${_msg[*]}"
   XZ_OPT="-e9" \
   tar \
     'cfJ' \
@@ -419,7 +427,16 @@ _ur_upload() {
     _wallet_seed="${7}" \
     _target_network="${8}" \
     _api_key_path="${9}" \
-    _evmfs_opts=()
+    _evmfs_opts=() \
+    _evmfs_uri_opts=() \
+    _msg=()
+  _msg=(
+    "Uploading signed source recipe"
+    "repository for package"
+    "'${_pkg}' to the EVMFS."
+  )
+  _msg_info \
+    "${_msg[*]}"
   if [[ "$EVMFS_OPTS" == "" ]]; then
     _evmfs_opts+=(
       -N
@@ -440,6 +457,11 @@ _ur_upload() {
       $EVMFS_OPTS
     )
   fi
+  _evmfs_uri_opts+=(
+    "${_evmfs_opts[@]}"
+    -m
+      "simulate"
+  )
   if [[ "${quiet}" == "n" ]]; then
     _evmfs_opts+=(
       -v
@@ -448,7 +470,40 @@ _ur_upload() {
   evmfs \
     "${_evmfs_opts[@]}" \
     publish \
-    "${_source_dir}/${_pkg}.tar.xz.gpg"
+      "${_source_dir}/${_pkg}.tar.xz.gpg"
+  _target_uri="$( \
+    evmfs \
+      "${_evmfs_uri_opts[@]}" \
+      publish \
+        "${_source_dir}/${_pkg}.tar.xz.gpg")"
+}
+
+_contract_call_opts_setup() {
+  _contract_call_opts+=(
+    -n
+      "${_target_network}"
+    -N
+      "${_wallet_name}"
+    -k
+      "${_api_key_path}"
+    -A
+      "${_abi}"
+    -B
+      "${_bytecode}"
+    -C
+      "${_compiler_output}"
+  )
+}
+
+_publish_call_opts_setup() {
+  local \
+    _contract_call_opts=()
+  _contract_call_opts_setup
+  _publish_call_opts+=(
+    "${_contract_call_opts[@]}"
+    -t
+      "dynamic"
+  )
 }
 
 _ur_pub() {
@@ -463,14 +518,17 @@ _ur_pub() {
     _target_network="${8}" \
     _api_key_path="${9}" \
     _target_publisher="${10}" \
-    _work_dir="${11}" \
-    _gnupg_home="${12}" \
-    _key_fingerprint="${13}" \
-    _package="${14}" \
+    _target_price="${11}" \
+    _work_dir="${13}" \
+    _gnupg_home="${14}" \
+    _key_fingerprint="${15}" \
+    _package="${16}" \
     _msg=() \
     _abi \
     _bytecode \
-    _compiler_output
+    _compiler_output \
+    _target_uri \
+    _publish_call_opts=()
   _msg=(
     "Publishing package '${_package}'"
     "on the Ur"
@@ -497,23 +555,30 @@ _ur_pub() {
       "${_ur_version}")"
   _ur_compress \
     "${_work_dir}" \
-    "${_pkg}"
+    "${_package}"
   _ur_sign \
     "${_work_dir}" \
-    "${_pkg}" \
+    "${_package}" \
     "${_gnupg_home}" \
     "${_key_fingerprint}"
   _ur_upload \
     "${_work_dir}" \
-    "${_pkg}" \
+    "${_package}" \
     "${_wallet_name}" \
     "${_wallet_path}" \
     "${_wallet_password}" \
     "${_wallet_seed}" \
     "${_target_network}" \
     "${_api_key_path}"
-  tree \
-    "${_work_dir}"
+  _publish_call_opts_setup
+  evm-contract-call \
+    "${_publish_call_opts[@]}" \
+    "${_ur_address}" \
+    "publishRecipe" \
+    "${_package}" \
+    "${_target_publisher}" \
+    "${_target_price}" \
+    "${_target_uri}"
 }
 
 _fur_pub() {
@@ -627,6 +692,7 @@ _pub_opts_setup() {
       "${_target_network}"
       "${_api_key_path}"
       "${_target_publisher}"
+      "${_target_price}"
       "${_source_tmp_dir}"
       "${_gnupg_home}"
       "${_key_fingerprint}"

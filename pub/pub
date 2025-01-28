@@ -699,8 +699,8 @@ _pub() {
     _publishing_platform="${15}" \
     _target_publisher="${16}" \
     _gnupg_home="${17}" \
-    _pgp_fingerprint="${18}" \
-    _email="${19}" \
+    _key_fingerprint="${18}" \
+    _key_email="${19}" \
     _platform="${20}" \
     _packages=() \
     _pkgs=() \

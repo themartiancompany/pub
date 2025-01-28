@@ -519,10 +519,10 @@ _ur_pub() {
     _api_key_path="${9}" \
     _target_publisher="${10}" \
     _target_price="${11}" \
-    _work_dir="${13}" \
-    _gnupg_home="${14}" \
-    _key_fingerprint="${15}" \
-    _package="${16}" \
+    _work_dir="${12}" \
+    _gnupg_home="${13}" \
+    _key_fingerprint="${14}" \
+    _package="${15}" \
     _msg=() \
     _abi \
     _bytecode \

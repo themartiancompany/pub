@@ -421,12 +421,12 @@ _ur_upload() {
   local \
     _source_dir="${1}" \
     _pkg="${2}" \
-    _wallet_name="${4}" \
-    _wallet_path="${5}" \
-    _wallet_password="${6}" \
-    _wallet_seed="${7}" \
-    _target_network="${8}" \
-    _api_key_path="${9}" \
+    _wallet_name="${3}" \
+    _wallet_path="${4}" \
+    _wallet_password="${5}" \
+    _wallet_seed="${6}" \
+    _target_network="${7}" \
+    _api_key_path="${8}" \
     _evmfs_opts=() \
     _evmfs_uri_opts=() \
     _msg=()

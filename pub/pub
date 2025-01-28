@@ -64,6 +64,8 @@ _global_variables() {
   publishing_platform=""
   target_publisher=""
   target_platform=""
+  target_price=""
+  measure_unit=""
   target_arch=""
   pub_dir=""
   pgp_fingerprint=""
@@ -353,7 +355,7 @@ _ur_sign() {
     _gpg_opts=() \
     _msg=()
   _msg=(
-    "signing source recipe repo '${_source_repo}/${pkg}'"
+    "signing source recipe repo '${_source_repo}/${_pkg}'"
   )
   _msg_info \
     "${_msg[*]}"
@@ -698,10 +700,12 @@ _pub() {
     _origin="${14}" \
     _publishing_platform="${15}" \
     _target_publisher="${16}" \
-    _gnupg_home="${17}" \
-    _key_fingerprint="${18}" \
-    _key_email="${19}" \
-    _platform="${20}" \
+    _target_price="${17}" \
+    _measure_unit="${18}" \
+    _gnupg_home="${19}" \
+    _key_fingerprint="${20}" \
+    _key_email="${21}" \
+    _platform="${22}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
@@ -713,7 +717,7 @@ _pub() {
     _source_tmp_dir \
     _msg=()
   shift \
-    20
+    22
   _packages=(
     "$@"
   )
@@ -989,6 +993,18 @@ _set_overrides() {
          get \
 	   "${wallet_name}" \
            "address")"
+  _set_override \
+    "target" \
+    "publisher" \
+    "${wallet_address}"
+  _set_override \
+    "target" \
+    "price" \
+    "1"
+  _set_override \
+    "measure" \
+    "unit" \
+    "ether"
   _contract_setup_auto_detect \
     "ur" \
     "UserRepository" \
@@ -1117,6 +1133,11 @@ $(_display_networks \
                                gur' and 'fur' and user's
                                wallet address for 'ur'.
                                Default: ${target_publisher}
+     -M <target_price>         Target price for the package.
+                               Default: ${target_price}
+     -m <measure_unit>         Measure unit for the network
+                               currency.
+                               Default: ${measure_unit}
      -H <gnupg_home>           GNUPG home directory.
                                Default: ${gnupg_home}
      -K <fingerprint>          OpenPG signature key.
@@ -1197,6 +1218,7 @@ while \
     s) override_repo_origin="${OPTARG}" ;;
     p) override_publishing_platform="${OPTARG}" ;;
     P) override_target_publisher="${OPTARG}" ;;
+    M) override_target_price="${OPTARG}" ;;
     H) override_gnupg_home="${OPTARG}" ;;
     K) override_pgp_fingerprint="${OPTARG}" ;;
     E) override_pgp_email="${OPTARG}" ;;
@@ -1246,6 +1268,8 @@ app_opts=(
   "${repo_origin}"
   "${publishing_platform}"
   "${target_publisher}"
+  "${target_price}"
+  "${measure_unit}"
   "${gnupg_home}"
   "${pgp_fingerprint}"
   "${pgp_email}"

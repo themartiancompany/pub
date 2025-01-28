@@ -32,6 +32,8 @@ _requirements() {
     'evm-wallet'
   _check_cmd \
     'git'
+  _check_cmd \
+    'rsync'
 }
 
 # shellcheck disable=SC2034
@@ -54,7 +56,8 @@ _global_variables() {
   gnupg_home=""
   repo_dir=""
   repo_origin=""
-  pub_plat=""
+  publishing_platform=""
+  target_publisher=""
   target_platform=""
   target_arch=""
   pub_dir=""
@@ -129,7 +132,7 @@ _lur_get_opts() {
     -d \
       "${_repo}/lur"
     -o
-      "${_tmp_dir}"
+      "${_binary_packages_tmp_dir}"
     -n
   )
   _get_opts+=(
@@ -225,7 +228,7 @@ _fur_get() {
     "${_oldpwd}"
 }
 
-_lur_get() {
+_lur_binary_package_get() {
   local \
     _dir="${1}" \
     _platform="${2}" \
@@ -255,9 +258,9 @@ _lur_get() {
   "${_get_cmd}" \
       "${_get_opts[@]}" \
       "${_pub}"
-  _src_pkgs=( $( \
+  _binary_pkgs=( $( \
     find \
-      "${_tmp_dir}" \
+      "${_binary_packages_tmp_dir}" \
       -iname \
         '*.pkg.*' \
       -exec \
@@ -265,7 +268,7 @@ _lur_get() {
           "{}" ';')
   )
   _msg_info \
-    "found packages ${_src_pkgs[*]}"
+    "found packages ${_binary_pkgs[*]}"
   cd \
     "${_oldpwd}"
 }
@@ -348,31 +351,101 @@ _fur_sign() {
     "${_oldpwd}"
 }
 
+_ur_sign() {
+  local \
+    _source_repo="${1}" \
+    _pkg="${2}" \
+    _gnupg_home="${3}" \
+    _key_fingerprint="${4}" \
+    _gpg_opts=() \
+    _msg=()
+  _msg=(
+    "signing source recipe repo '${_source_repo}/${pkg}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  _gpg_opts+=(
+    --homedir
+      "${_gnupg_home}"
+    --local-user
+      "${_key_fingerprint}"
+    --sign
+    --output
+      "${_source_repo}/${_pkg}.gpg"
+  )
+  if [[ "${quiet}" == "n" ]]; then
+    tree \
+      "${_source_repo}/${_pkg}"
+  fi
+  gpg \
+    "${_gpg_opts[@]}" \
+    "${_source_repo}/${_pkg}"
+}
+
 _ur_pub() {
   local \
-    _target_network="${1}" \
-    _up_address="${2}" \
-    _abi="${3}" \
-    _bytecode="${4}" \
-    _compiler_output="${5}" \
-    _work_dir="${6}" \
-    _gnupg_home="${7}" \
-    _keys_update="${8}" \
-    _msg=()
+    _ur_address="${1}" \
+    _ur_version="${2}" \
+    _deployments_dir="${3}" \
+    _wallet_name="${4}" \
+    _wallet_path="${5}" \
+    _wallet_password="${6}" \
+    _wallet_seed="${7}" \
+    _target_network="${8}" \
+    _api_key_path="${9}" \
+    _target_publisher="${10}" \
+    _work_dir="${11}" \
+    _gnupg_home="${12}" \
+    _key_fingerprint="${13}" \
+    _package="${14}" \
+    _msg=() \
+    _abi \
+    _bytecode \
+    _compiler_output
+  _msg=(
+    "Publishing package '${_package}'"
+    "on the Ur"
+  )
+  _msg_info \
+    "${_msg_info[*]}"
+  _abi="$( \
+    _contract_abi_get \
+      "${_deployments_dir}" \
+      "${_target_network}" \
+      "UserRepository" \
+      "${_ur_version}")"
+  _bytecode="$( \
+    _contract_bytecode_get \
+      "${_deployments_dir}" \
+      "${_target_network}" \
+      "UserRepository" \
+      "${_ur_version}")"
+  _compiler_output="$( \
+    _contract_compiler_output_get \
+      "${_deployments_dir}" \
+      "${_target_network}" \
+      "UserRepository" \
+      "${_ur_version}")"
+  _ur_sign \
+    "${_work_dir}" \
+    "${_pkg}" \
+    "${_gnupg_home}" \
+    "${_key_fingerprint}"
 }
 
 _fur_pub() {
   local \
     _dir="${1}" \
     _pkg="${2}" \
-    _fingerprint="${3}" \
-    _platform="${4}" \
+    _publisher="${3}" \
+    _fingerprint="${4}" \
+    _platform="${5}" \
     _packages=() \
     _package \
     _oldpwd \
     _signature_detached
   shift \
-    4
+    5
   _packages+=(
     "$@"
   )
@@ -380,21 +453,22 @@ _fur_pub() {
   _oldpwd="$( \
     pwd)"
   _msg_info \
-   "add tmc remote in repo '${_dir}/${_pub}'"
+   "Add ${_publisher}"
+   "remote in repo '${_dir}/${_pub}'"
   git \
     -C \
       "${_dir}/${_pub}" \
     remote \
       add \
         tmc \
-        "github:themartiancompany/${_pub}"
+        "github:${_publisher}/${_pub}"
   git \
     -C \
       "${_dir}/${_pub}" \
     remote \
       add \
         gl \
-        "gitlab:themartiancompany/${_pub}"
+        "gitlab:${_publisher}/${_pub}"
   git \
     -C \
       "${_dir}/${_pub}" \
@@ -425,6 +499,7 @@ _fur_pub() {
       "${_dir}/${_pub}/${_package_dir}"
     rsync \
       -v \
+      -a \
       "${_pkg[@]}" \
       "${_dir}/${_pub}/${_package_dir}"
   done
@@ -456,29 +531,129 @@ _fur_pub() {
     "${_oldpwd}"
 }
 
-_pub_opts_get() {
-  if [[ "${_pub_plat}" == "ur" ]]; then
+_pub_opts_setup() {
+  if [[ "${_publishing_platform}" == "ur" ]]; then
     _pub_opts+=(
+      "${_ur_address}"
+      "${_ur_version}"
+      "${_deployments_dir}"
+      "${_wallet_name}"
+      "${_wallet_path}"
+      "${_wallet_password}"
+      "${_wallet_seed}"
       "${_target_network}"
-      "${_up_address}"
-      "${_up_abi}"
-      "${_up_bytecode}"
-      "${_up_compiler_output}"
-      "${_work_dir}"
+      "${_api_key_path}"
+      "${_target_publisher}"
+      "${_source_tmp_dir}"
       "${_gnupg_home}"
+      "${_key_fingerprint}"
       "${_pkg}"
-      "${_key}"
     )
-  elif [[ "${_pub_plat}" == "fur" ]]; then
+  elif [[ "${_publishing_platform}" == "fur" ]]; then
     _pub_opts+=(
       "${_pub_repo}" \
       "${_pkg}" \
+      "${_publisher}" \
       "${_key}" \
       "${_platform}" \
-      "${_src_pkgs[@]}"
+      "${_binary_pkgs[@]}"
     )
   fi
+}
 
+_repo_dir_setup() {
+  local \
+    _msg=() \
+    _tmp_dir
+  _tmp_dir="${_cache_dir}/repo"
+  _repo_dir="$( \
+    mktemp \
+      -d \
+      -p \
+        "${_tmp_dir}")"
+  _msg=(
+    "setting up repository directory"
+    "'${_repo_dir}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  mkdir \
+    -p \
+    "${_repo_dir}"
+  chmod \
+    700 \
+    "${_repo_dir}"
+}
+
+_binary_packages_tmp_dir_setup() {
+  local \
+    _msg=() \
+    _tmp_dir
+  _tmp_dir="${_cache_dir}/binaries"
+  _binary_packages_tmp_dir="$( \
+    mktemp \
+      -d \
+      -p \
+        "${_tmp_dir}")"
+  _msg=(
+    "setting up temporary"
+    "binary packages directory"
+    "'${_binary_packages_tmp_dir}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  mkdir \
+    -p \
+    "${_binary_packages_tmp_dir}"
+  chmod \
+    700 \
+    "${_binary_packages_tmp_dir}"
+}
+
+_source_tmp_dir_setup() {
+  local \
+    _msg=() \
+    _tmp_dir
+  _tmp_dir="${_cache_dir}/source"
+  _binary_packages_tmp_dir="$( \
+    mktemp \
+      -d \
+      -p \
+        "${_tmp_dir}")"
+  _msg=(
+    "setting up temporary"
+    "source package directory"
+    "'${_source_tmp_dir}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  mkdir \
+    -p \
+    "${_source_tmp_dir}"
+  chmod \
+    700 \
+    "${_source_tmp_dir}"
+}
+
+_source_prepare() {
+  local \
+    _source_repo="${1}" \
+    _pkg="${2}" \
+    _source_dir="${3}"
+  rsync \
+    -a \
+    "${_source_repo}/${_pkg}" \
+    "${_source_dir}"
+  if [[ -d "${_source_dir}/${_pkg}/.git" ]]; then
+    _msg=(
+      "removing git repository"
+    )
+    _msg_info \
+      "${_msg[*]}"
+    rm \
+      -rf \
+      "${_source_dir}/${_pkg}/.git"
+  fi
 }
 
 # $@: packages
@@ -496,28 +671,31 @@ _pub() {
     _api_key_path="${10}" \
     _cache_dir="${11}" \
     _output_dir="${12}" \
-    _repo="${13}" \
+    _repo_dir="${13}" \
     _origin="${14}" \
-    _pub_plat="${15}" \
-    _gnupg_home="${16}" \
-    _pgp_fingerprint="${17}" \
-    _email="${18}" \
-    _platform="${19}" \
+    _publishing_platform="${15}" \
+    _target_publisher="${16}" \
+    _gnupg_home="${17}" \
+    _pgp_fingerprint="${18}" \
+    _email="${19}" \
+    _platform="${20}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
     _pub_opts=() \
+    _binary_pkgs=() \
     _pkg \
     _pub_repo \
-    _tmp_dir \
+    _binary_packages_tmp_dir \
+    _source_tmp_dir \
     _msg=()
   shift \
-    19
+    20
   _packages=(
     "$@"
   )
   if [[ "${_package_type}" == "source" && \
-        "${_pub_plat}" == "fur" ]]; then
+        "${_publishing_platform}" == "fur" ]]; then
     _msg=(
       "The fur is a binary package publishing"
       "platform."
@@ -526,10 +704,8 @@ _pub() {
       "${_msg[*]}" \
       1
   fi
-  if [[ "${_repo}" == "" ]]; then
-    _repo="$( \
-      mktemp \
-        -d)"
+  if [[ "${_repo_dir}" == "" ]]; then
+    _repo_dir_setup
   fi
   _msg_info \
     "Packages: ${_packages[*]}."
@@ -537,33 +713,48 @@ _pub() {
     in "${_packages[@]}"; do
     _msg_info \
       "Package '${_pkg}'."
-    _tmp_dir="$( \
+    _binary_packages_tmp_dir_setup
+    _binary_packages_tmp_dir="$( \
       mktemp \
         -d)"
     _pub_repo="$( \
       mktemp \
         -d)"
     if [[ "${_package_type}" == "binary" ]]; then
-      "_${_origin}_get" \
-        "${_repo}" \
+      "_${_origin}_binary_package_get" \
+        "${_repo_dir}" \
         "${_platform}" || \
         echo \
          "no get function for ${_origin}"
       _get_opts=()
-      "_${_pub_plat}_get" \
+      "_${_publishing_platform}_get" \
         "${_pub_repo}" \
         "${_platform}" || \
         echo "hi"
+    elif [[ "${_package_type}" == "source" ]]; then
+      if [[ "${_origin}" == "lur" ]]; then
+        if [[ ! -d "${_repo_dir}/lur/${_pkg}" ]]; then
+          _msg=(
+            "found no sources for package"
+            "'${_pkg}' in repo '${_repo_dir}/lur'"
+          )
+          _msg_error \
+            "${_msg[*]}" \
+            1
+	else
+          _source_tmp_dir_setup
+	  _source_prepare \
+	    "${_repo_dir}/lur" \
+	    "${_pkg}" \
+	    "${_source_tmp_dir}"
+        fi
+      fi
     fi
     _msg_info \
-       "publishing packages ${_src_pkgs[*]}"
-    _pub_args_get
-    "_${_pub_plat}_pub" \
-      "${_pub_repo}" \
-      "${_pkg}" \
-      "${_pgp_fingerprint}" \
-      "${_platform}" \
-      "${_src_pkgs[@]}"
+       "publishing packages ${_binary_pkgs[*]}"
+    _pub_opts_setup
+    "_${_publishing_platform}_pub" \
+      "${_pub_opts[@]}"
   done
   cd \
     "${OLDPWD}"
@@ -571,32 +762,45 @@ _pub() {
 
 _pgp_fingerprint_auto_detect() {
   local \
-    _fingerprint
-  if [[ "${pub_plat}" == "fur" ]]; then
-  _fingerprint="$( \
-    git \
-      config \
-        --list | \
-      grep \
-        signingkey | \
-        awk \
-          -F \
-            "=" \
-          '{print $2}')"
+    _fingerprint \
+    _msg=()
+  if [[ "${publishing_platform}" == "fur" ]]; then
+    _msg=(
+      "using default git signing key"
+    )
+    _msg_info \
+      "${_msg[*]}"
+    _fingerprint="$( \
+      git \
+        config \
+          --list | \
+        grep \
+          signingkey | \
+          awk \
+            -F \
+              "=" \
+            '{print $2}')"
+  elif [[ "${publishing_platform}" == "ur" ]]; then
+    _msg=(
+      "Selecting latest published"
+      "publisher's wallet address key"
+      "retrieved from keyserver."
+    )
+    _msg_info \
+      "${_msg[*]}"
   fi
   _set_override \
     "pgp" \
     "fingerprint" \
-    "fingerprint"
+    "${_fingerprint}"
 }
 
 _pgp_email_auto_detect() {
   local \
     _email
-  if [[ "${pub_plat}" == "ur" ]]; then
-    echo \
-      "hi"
-  elif [[ "${pub_plat}" == "fur" ]]; then
+  if [[ "${publishing_platform}" == "ur" ]]; then
+    _email=""
+  elif [[ "${publishing_platform}" == "fur" ]]; then
     _email="$( \
       git \
         config \
@@ -632,10 +836,10 @@ _platform_auto_detect() {
 _package_type_auto_detect() {
   local \
     _type
-  if [[ "${pub_plat}" == "fur" ]]; then
+  if [[ "${publishing_platform}" == "fur" ]]; then
     _type="binary"
-  elif [[ "${pub_plat}" == "ur" || \
-          "${pub_plat}" == "gur"  ]]; then
+  elif [[ "${publishing_platform}" == "ur" || \
+          "${publishing_platform}" == "gur"  ]]; then
     _type="source"
   fi
   _set_override \
@@ -664,6 +868,10 @@ _set_overrides() {
     "date" \
     "$(_get_date_human)"
   _set_override \
+    "publishing" \
+    "platform" \
+    "ur"
+  _set_override \
     "wallet" \
     "name" \
     "default"
@@ -673,51 +881,35 @@ _set_overrides() {
     "n"
   _deployments_dir_auto_detect \
     "ur" \
-    "$(_get \
-         "user" \
-         "level")"
+    "${user_level}"
   _network_auto_detect \
     "UserRepository" \
-    "$(_get \
-         "deployments" \
-         "dir")" \
-    "$(_get \
-         "user" \
-         "level")"
+    "${deployments_dir}"
+    "${user_level}"
   _api_key_auto_detect \
-    "$(_get \
-         "target" \
-         "network")"
+    "${target_network}"
   _set_override \
     "wallet" \
     "path" \
     "$(_wallet_path_get \
          "evm-wallet" \
-         "$(_get \
-              "wallet" \
-              "name")")"
+         "${wallet_name}")"
   _secret_auto_detect \
     "seed" \
     "seed" \
     "evm-wallet" \
-    "$(_get \
-         "wallet" \
-         "name")"
+    "${wallet_name}"
   _secret_auto_detect \
     "password" \
     "plain" \
     "evm-wallet" \
-    "$(_get \
-         "wallet" \
-         "name")"
+    "${wallet_name}"
   _set_override \
     "wallet" \
     "address" \
     "$(evm-wallet \
          get \
-           "$(_get \
-                "wallet" \
-                "name")" \
+	   "${wallet_name}" \
            "address")"
   _contract_setup_auto_detect \
     "ur" \
@@ -734,10 +926,6 @@ _set_overrides() {
     "repo" \
     "origin" \
     "lur"
-  _set_override \
-    "pub" \
-    "plat" \
-    "ur"
   _package_type_auto_detect
   _set_override \
     "pub" \
@@ -747,7 +935,6 @@ _set_overrides() {
     "cache" \
     "dir" \
     "$(_cache_dir_auto_detect)"
-  _gnupg_home_auto_detect
   _set_override \
     "gnupg" \
     "home" \
@@ -846,7 +1033,12 @@ $(_display_networks \
                                Default: ${repo_origin}
      -p <publishing_platform>  Publishing platform.
                                It can be 'ur', 'gur', 'fur'.
-                               Default: ${pub_plat}
+                               Default: ${publishing_platform}
+     -P <target_publisher>     Target publisher.
+                               It's 'themartiancompany' for
+                               gur' and 'fur' and user's
+                               wallet address for 'ur'.
+                               Default: ${target_publisher}
      -H <gnupg_home>           GNUPG home directory.
                                Default: ${gnupg_home}
      -K <fingerprint>          OpenPG signature key.
@@ -857,7 +1049,7 @@ $(_display_networks \
                                Default: ${output_dir}
      -P <computing_platform>   Life or DogeOS base platform for
                                which the binary package is built
-			       ('arch', 'termux').
+                               ('arch', 'termux').
                                Default: ${target_platform}
 
      -c                        Colors.
@@ -878,7 +1070,7 @@ _show_config() {
   _msg_info "             Package type:   ${package_type}"
   _msg_info "              Repo origin:   ${repo_origin}"
   _msg_info "           Repo directory:   ${repo_dir}"
-  _msg_info "      Publishing platform:   ${pub_plat}"
+  _msg_info "      Publishing platform:   ${publishing_platform}"
   _msg_info "  User Repository address:   ${ur_address}"
   _msg_info "  User Repository version:   ${ur_version}"
   _msg_info "               User level:   ${user_level}"
@@ -892,6 +1084,7 @@ _show_config() {
   _msg_info "                  API key:   ${api_key}"
   _msg_info "          Cache directory:   ${cache_dir}"
   _msg_info "     Publishing directory:   ${pub_dir}"
+  _msg_info "         Target publisher:   ${target_publisher}"
   _msg_info "          GNUPG directory:   ${gnupg_home}"
   _msg_info "          Target platform:   ${target_platform}"
   _msg_info "            Signature key:   ${pgp_fingerprint}"
@@ -907,7 +1100,7 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    't:A:V:ud:N:w:w:p:s:n:k:C:p:K:E:W:o:P:cvh?' \
+    't:A:V:ud:N:w:w:p:P:s:n:k:C:p:K:E:W:o:O:cvh?' \
     arg; do
   case \
     "${arg}" in
@@ -924,13 +1117,14 @@ while \
     k) override_api_key="${OPTARG}" ;;
     C) override_repo_dir="${OPTARG}" ;;
     s) override_repo_origin="${OPTARG}" ;;
-    p) override_pub_platform="${OPTARG}" ;;
+    p) override_publishing_platform="${OPTARG}" ;;
+    P) override_target_publisher="${OPTARG}" ;;
     H) override_gnupg_home="${OPTARG}" ;;
     K) override_pgp_fingerprint="${OPTARG}" ;;
     E) override_pgp_email="${OPTARG}" ;;
     W) override_pub_dir="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
-    P) override_target_platform="${OPTARG}" ;;
+    O) override_target_platform="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
     h|?) _set_overrides && \
@@ -972,7 +1166,8 @@ app_opts=(
   "${output_dir}"
   "${repo_dir}"
   "${repo_origin}"
-  "${pub_plat}"
+  "${publishing_platform}"
+  "${target_publisher}"
   "${gnupg_home}"
   "${pgp_fingerprint}"
   "${pgp_email}"

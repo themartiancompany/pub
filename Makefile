@@ -18,7 +18,7 @@ check: shellcheck
 shellcheck:
 	shellcheck -s bash $(SCRIPT_FILES)
 
-install: install-$(_PROJECT) install-doc
+install: install-$(_PROJECT) install-doc man
 
 install-doc:
 

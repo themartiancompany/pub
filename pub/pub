@@ -637,7 +637,7 @@ _source_tmp_dir_setup() {
     _msg=() \
     _tmp_dir
   _tmp_dir="${_cache_dir}/source"
-  _source_packages_tmp_dir="$( \
+  _source_tmp_dir="$( \
     mktemp \
       -u \
       -d \

@@ -19,10 +19,6 @@ source \
 # are available
 _requirements() {
   _check_cmd \
-    'libevm-requirements' \
-    'libevm'
-  libevm-requirements
-  _check_cmd \
     'evm-contract-call' \
     'evm-contracts-tools'
   _check_cmd \
@@ -32,6 +28,15 @@ _requirements() {
     'evm-wallet'
   _check_cmd \
     'git'
+  _check_cmd \
+    'gpg' \
+    'gnupg'
+  _check_cmd \
+    'gpg-key-info'
+  _check_cmd \
+    'libevm-requirements' \
+    'libevm'
+  libevm-requirements
   _check_cmd \
     'rsync'
 }
@@ -140,23 +145,11 @@ _lur_get_opts() {
   )
 }
 
-_ur_get_opts(){
-  local \
-    _aspe_opts=()
-  _get_cmd="aspe"
-  _aspe_opts=(
-    -p
-      "etherscan"
-  )
-  _get_opts+=(
-    "${_aspe_opts[@]}"
-  )
-}
-
 _fur_repo_clean() {
   local \
     _dir="${1}" \
     _find_opts=() \
+    _msg=()
   _msg=(
     "looking for packages and signatures"
     "in '${_dir}'."
@@ -760,34 +753,91 @@ _pub() {
     "${OLDPWD}"
 }
 
+_key_latest_select() {
+  local \
+    _keyserver_receive_dir \
+    _find_opts=() \
+    _keys=() \
+    _keys_sorted=() \
+    _msg=()
+  _keyserver_receive_dir="${HOME}/.cache/evm-openpgp-keyserver/receive"
+  _msg=(
+    "Selecting latest published"
+    "publisher's wallet address key"
+    "retrieved from keyserver."
+  )
+  _msg_info \
+    "${_msg[*]}"
+  _msg=(
+    "looking for own signatures"
+    "in '${_dir}'."
+  )
+  _msg_info \
+    "${_msg[*]}"
+  _find_opts+=(
+    -type
+      "f"
+    -iname
+      "${wallet_address}.*.asc"
+    -print0
+  )
+  _msg=(
+    "running find with options"
+    "'${_find_opts[@]}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  mapfile \
+    -d \
+    $'\0' \
+    _keys < \
+    <(find \
+        "${_keyserver_receive_dir}" \
+	"${_find_opts[@]}" 2>/dev/null || \
+      true)
+  _keys_sorted=( $( \
+    printf \
+      "%s\n" \
+      "${_keys[@]}" | \
+      sort \
+        -V)
+  )
+  _msg_info \
+    "selecting key '${_keys_sorted[-1]}'"
+  _fingerprint="$( \
+    gpg-key-info \
+      -o \
+        "fingerprint" \
+      "${_key_sorted[-1]}")"
+}
+
+_key_git_select() {
+  local \
+    _msg=()
+  _msg=(
+    "using default git signing key"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  _fingerprint="$( \
+    git \
+      config \
+        --list | \
+      grep \
+        signingkey | \
+        awk \
+          -F \
+            "=" \
+          '{print $2}')"
+}
+
 _pgp_fingerprint_auto_detect() {
   local \
-    _fingerprint \
-    _msg=()
+    _fingerprint
   if [[ "${publishing_platform}" == "fur" ]]; then
-    _msg=(
-      "using default git signing key"
-    )
-    _msg_info \
-      "${_msg[*]}"
-    _fingerprint="$( \
-      git \
-        config \
-          --list | \
-        grep \
-          signingkey | \
-          awk \
-            -F \
-              "=" \
-            '{print $2}')"
+    _key_git_select
   elif [[ "${publishing_platform}" == "ur" ]]; then
-    _msg=(
-      "Selecting latest published"
-      "publisher's wallet address key"
-      "retrieved from keyserver."
-    )
-    _msg_info \
-      "${_msg[*]}"
+    _key_latest_select
   fi
   _set_override \
     "pgp" \

@@ -69,6 +69,10 @@ _global_variables() {
   package_type=""
   ur_address=""
   ur_version=""
+  pp_address=""
+  pp_version=""
+  up_address=""
+  up_version=""
   deployments_dir=""
   user_level=""
   wallet_name=""
@@ -87,6 +91,7 @@ _global_variables() {
   target_platform=""
   target_price=""
   measure_unit=""
+  list_package=""
   target_arch=""
   pub_dir=""
   pgp_fingerprint=""
@@ -497,12 +502,48 @@ _contract_call_opts_setup() {
 
 _publish_call_opts_setup() {
   local \
+    _abi="${1}" \
+    _bytecode="${2}" \
+    _compiler_output="${3}" \
     _contract_call_opts=()
   _contract_call_opts_setup
   _publish_call_opts+=(
     "${_contract_call_opts[@]}"
     -t
       "dynamic"
+  )
+}
+
+_package_list_call_opts_setup() {
+  local \
+    _abi="${1}" \
+    _bytecode="${2}" \
+    _compiler_output="${3}" \
+    _contract_call_opts=()
+  _contract_call_opts_setup
+  _unlisted_check_call_opts+=(
+    "${_contract_call_opts[@]}"
+    -t
+      "static"
+  )
+  _package_list_call_opts+=(
+    "${_contract_call_opts[@]}"
+    -t
+      "dynamic"
+  )
+}
+
+_publisher_check_call_opts_setup() {
+  local \
+    _abi="${1}" \
+    _bytecode="${2}" \
+    _compiler_output="${3}" \
+    _contract_call_opts=()
+  _contract_call_opts_setup
+  _publisher_check_call_opts+=(
+    "${_contract_call_opts[@]}"
+    -t
+      "static"
   )
 }
 
@@ -515,28 +556,133 @@ _ether_to_wei() {
     "$((_ether * _scale))"
 }
 
+_ur_publisher_check() {
+  local \
+    _up_address="${1}" \
+    _up_version="${2}" \
+    _deployments_dir="${3}" \
+    _target_network="${4}" \
+    _target_publisher="${5}" \
+    _listed \
+    _up_abi \
+    _up_bytecode \
+    _up_compiler_output \
+    _publisher_check_call_opts=() \
+    _msg=()
+  _contract_artifacts_auto_detect \
+    "${_deployments_dir}" \
+    "${_target_network}" \
+    "UserRepositoryPublishers" \
+    "_up" \
+    "${_up_version}"
+  _publisher_check_call_opts_setup \
+    "${_up_abi}" \
+    "${_up_bytecode}" \
+    "${_up_compiler_output}"
+  _listed="$( \
+    evm-contract-call \
+      "${_publisher_check_call_opts[@]}" \
+      "${_up_address}" \
+      "listed" \
+      "${_target_publisher}")"
+  if [[ "${_listed}" == 0 ]]; then
+    _msg=(
+      "Publisher '${_target_publisher}'"
+      "is not registered on the User Repository."
+      "Register it by running 'ur-publishers"
+      "register <target_publisher>'"
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  elif (( 0 < "${_listed}" )); then
+    _msg=(
+      "Publisher '${_target_publisher}'"
+      "is correctly registered on the User Repository."
+    )
+    _msg_info \
+      "${_msg[*]}"
+  fi
+}
+
+_ur_package_list() {
+  local \
+    _pp_address="${1}" \
+    _ur_address="${2}" \
+    _up_address="${3}" \
+    _package="${4}" \
+    _target_publisher="${5}" \
+    _unlisted_check_call_opts=() \
+    _package_list_call_opts=() \
+    _msg=() \
+    _pp_abi \
+    _pp_bytecode \
+    _pp_compiler_output \
+    _listed \
+    _up_abi \
+    _up_bytecode \
+    _up_compiler_output
+  _contract_artifacts_auto_detect \
+    "${_deployments_dir}" \
+    "${_target_network}" \
+    "PackagePublishers" \
+    "_pp" \
+    "${_ur_version}"
+  _package_list_call_opts_setup \
+    "${_pp_abi}" \
+    "${_pp_bytecode}" \
+    "${_pp_compiler_output}"
+  _listed="$( \
+    evm-contract-call \
+      "${_unlisted_check_call_opts[@]}" \
+      "${_pp_address}" \
+      "packagePublisherListed" \
+      "${_ur_address}" \
+      "${_up_address}" \
+      "${_package}" \
+      "${_target_publisher}")"
+  if [[ "${_listed}" == 0 ]]; then
+    _msg=(
+      "Listing package '${_package}'"
+      "for publisher '${_target_publisher}'."
+    )
+    _msg_info \
+      "${_msg[*]}"
+    _ur_publisher_check \
+      "${_up_address}" \
+      "${ur_version}" \
+      "${_deployments_dir}" \
+      "${_target_network}" \
+      "${_target_publisher}"
+    
+  fi
+}
+
 _ur_pub() {
   local \
     _ur_address="${1}" \
     _ur_version="${2}" \
-    _deployments_dir="${3}" \
-    _wallet_name="${4}" \
-    _wallet_path="${5}" \
-    _wallet_password="${6}" \
-    _wallet_seed="${7}" \
-    _target_network="${8}" \
-    _api_key_path="${9}" \
-    _target_publisher="${10}" \
-    _target_price="${11}" \
-    _measure_unit="${12}" \
-    _work_dir="${13}" \
-    _gnupg_home="${14}" \
-    _key_fingerprint="${15}" \
-    _package="${16}" \
+    _up_address="${3}" \
+    _pp_address="${4}" \
+    _deployments_dir="${5}" \
+    _wallet_name="${6}" \
+    _wallet_path="${7}" \
+    _wallet_password="${8}" \
+    _wallet_seed="${9}" \
+    _target_network="${10}" \
+    _api_key_path="${11}" \
+    _target_publisher="${12}" \
+    _target_price="${13}" \
+    _measure_unit="${14}" \
+    _list_package="${15}" \
+    _work_dir="${16}" \
+    _gnupg_home="${17}" \
+    _key_fingerprint="${18}" \
+    _package="${19}" \
     _msg=() \
-    _abi \
-    _bytecode \
-    _compiler_output \
+    _ur_abi \
+    _ur_bytecode \
+    _ur_compiler_output \
     _target_uri \
     _publish_call_opts=()
   _msg=(
@@ -545,24 +691,12 @@ _ur_pub() {
   )
   _msg_info \
     "${_msg_info[*]}"
-  _abi="$( \
-    _contract_abi_get \
-      "${_deployments_dir}" \
-      "${_target_network}" \
-      "UserRepository" \
-      "${_ur_version}")"
-  _bytecode="$( \
-    _contract_bytecode_get \
-      "${_deployments_dir}" \
-      "${_target_network}" \
-      "UserRepository" \
-      "${_ur_version}")"
-  _compiler_output="$( \
-    _contract_compiler_output_get \
-      "${_deployments_dir}" \
-      "${_target_network}" \
-      "UserRepository" \
-      "${_ur_version}")"
+  _contract_artifacts_auto_detect \
+    "${_deployments_dir}" \
+    "${_target_network}" \
+    "UserRepository" \
+    "_ur" \
+    "${_ur_version}"
   _ur_compress \
     "${_work_dir}" \
     "${_package}"
@@ -580,7 +714,10 @@ _ur_pub() {
     "${_wallet_seed}" \
     "${_target_network}" \
     "${_api_key_path}"
-  _publish_call_opts_setup
+  _publish_call_opts_setup \
+    "${_ur_abi}" \
+    "${_ur_bytecode}" \
+    "${_ur_compiler_output}"
   if [[ "${_measure_unit}" == "ether" ]]; then
     _target_price="$( \
       _ether_to_wei \
@@ -594,6 +731,12 @@ _ur_pub() {
     "${_target_publisher}" \
     "${_target_price}" \
     "${_target_uri}"
+  _ur_package_list \
+    "${_pp_address}" \
+    "${_ur_address}" \
+    "${_up_address}" \
+    "${_package}" \
+    "${_target_publisher}"
 }
 
 _fur_pub() {
@@ -699,6 +842,8 @@ _pub_opts_setup() {
     _pub_opts+=(
       "${_ur_address}"
       "${_ur_version}"
+      "${_up_address}"
+      "${_pp_address}"
       "${_deployments_dir}"
       "${_wallet_name}"
       "${_wallet_path}"
@@ -709,6 +854,7 @@ _pub_opts_setup() {
       "${_target_publisher}"
       "${_target_price}"
       "${_measure_unit}"
+      "${_list_package}"
       "${_source_tmp_dir}"
       "${_gnupg_home}"
       "${_key_fingerprint}"
@@ -855,25 +1001,28 @@ _pub() {
     _package_type="${1}" \
     _ur_address="${2}" \
     _ur_version="${3}" \
-    _deployments_dir="${4}" \
-    _wallet_name="${5}" \
-    _wallet_path="${6}" \
-    _wallet_password="${7}" \
-    _wallet_seed="${8}" \
-    _target_network="${9}" \
-    _api_key_path="${10}" \
-    _cache_dir="${11}" \
-    _output_dir="${12}" \
-    _repo_dir="${13}" \
-    _origin="${14}" \
-    _publishing_platform="${15}" \
-    _target_publisher="${16}" \
-    _target_price="${17}" \
-    _measure_unit="${18}" \
-    _gnupg_home="${19}" \
-    _key_fingerprint="${20}" \
-    _key_email="${21}" \
-    _platform="${22}" \
+    _up_address="${4}" \
+    _pp_address="${5}" \
+    _deployments_dir="${6}" \
+    _wallet_name="${7}" \
+    _wallet_path="${8}" \
+    _wallet_password="${9}" \
+    _wallet_seed="${10}" \
+    _target_network="${11}" \
+    _api_key_path="${12}" \
+    _cache_dir="${13}" \
+    _output_dir="${14}" \
+    _repo_dir="${15}" \
+    _origin="${16}" \
+    _publishing_platform="${17}" \
+    _target_publisher="${18}" \
+    _target_price="${19}" \
+    _measure_unit="${20}" \
+    _list_package="${21}" \
+    _gnupg_home="${22}" \
+    _key_fingerprint="${23}" \
+    _key_email="${24}" \
+    _platform="${25}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
@@ -885,7 +1034,7 @@ _pub() {
     _source_tmp_dir \
     _msg=()
   shift \
-    22
+    25
   _packages=(
     "$@"
   )
@@ -1173,10 +1322,28 @@ _set_overrides() {
     "measure" \
     "unit" \
     "ether"
+  _set_override \
+    "list" \
+    "package" \
+    "y"
   _contract_setup_auto_detect \
     "ur" \
     "UserRepository" \
     "ur" \
+    "${target_network}" \
+    "${user_level}" \
+    "${deployments_dir}"
+  _contract_setup_auto_detect \
+    "ur" \
+    "PackagePublishers" \
+    "pp" \
+    "${target_network}" \
+    "${user_level}" \
+    "${deployments_dir}"
+  _contract_setup_auto_detect \
+    "ur" \
+    "UserRepositoryPublishers" \
+    "up" \
     "${target_network}" \
     "${user_level}" \
     "${deployments_dir}"
@@ -1264,10 +1431,16 @@ $(_display_networks \
      "${_networks[*]}")
 
   options:
-     -A <ur_address>           Address of the 'User Repository
+     -A <ur_address>           Address of the 'User Repository'
+                               contract on the network.
+                               Default: ${ur_address}
+     -B <up_address>           Address of the 'User Repository
                                Publishers' contract on the
                                network.
-                               Default: ${ur_address}
+                               Default: ${up_address}
+     -C <pp_address>           Address of the 'Package Publishers'
+                               contract on the network.
+                               Default: ${pp_address}
      -V <ur_version>           Version of the target 'User Repository
                                Publishers' contract.
                                Default: ${ur_version}
@@ -1289,11 +1462,11 @@ $(_display_networks \
                                Default: ${target_network}
      -k <api_key>              Etherscan-like service key.
                                Default: ${api_key}
-     -C <repo_dir>             Repo directory.
+     -W <repo_dir>             Repo directory.
                                Default: ${repo_dir}
      -S <origin>               Repo origin.
                                Default: ${repo_origin}
-     -p <publishing_platform>  Publishing platform.
+     -D <publishing_platform>  Publishing platform.
                                It can be 'ur', 'gur', 'fur'.
                                Default: ${publishing_platform}
      -P <target_publisher>     Target publisher.
@@ -1305,20 +1478,24 @@ $(_display_networks \
                                Default: ${target_price}
      -m <measure_unit>         Measure unit for the network
                                currency. It can be 'ether'
-			       and 'wei'.
+                               and 'wei'.
                                Default: ${measure_unit}
+     -L <y/n>                  Whether to list package
+                               for user search. Requires to
+			       be a registered Ur publisher.
+                               Default: ${list_package}
      -H <gnupg_home>           GNUPG home directory.
                                Default: ${gnupg_home}
      -K <fingerprint>          OpenPG signature key.
                                Default: ${pgp_fingerprint}
      -E <email_like_id>        OpenPG signature email.
                                Default: ${pgp_email}
-     -o <output_dir>           Output directory.
-                               Default: ${output_dir}
-     -P <computing_platform>   Life or DogeOS base platform for
+     -O <computing_platform>   Life or DogeOS base platform for
                                which the binary package is built
                                ('arch', 'termux').
                                Default: ${target_platform}
+     -o <output_dir>           Output directory.
+                               Default: ${output_dir}
 
      -c                        Colors.
      -h                        This message.
@@ -1334,33 +1511,36 @@ ENDUSAGETEXT
 # Shows configuration options.
 _show_config() {
   _msg_info "${app_name} configuration"
-  _msg_info "          Publishing date:   ${publishing_date}"
-  _msg_info "             Package type:   ${package_type}"
-  _msg_info "              Repo origin:   ${repo_origin}"
-  _msg_info "           Repo directory:   ${repo_dir}"
-  _msg_info "      Publishing platform:   ${publishing_platform}"
-  _msg_info "  User Repository address:   ${ur_address}"
-  _msg_info "  User Repository version:   ${ur_version}"
-  _msg_info "               User level:   ${user_level}"
-  _msg_info "    Deployments directory:   ${deployments_dir}"
-  _msg_info "           Wallet address:   ${wallet_address}"
-  _msg_info "              Wallet name:   ${wallet_name}"
-  _msg_info "              Wallet path:   ${wallet_path}"
-  _msg_info "          Wallet password:   ${wallet_password}"
-  _msg_info "              Wallet seed:   ${wallet_seed}"
-  _msg_info "           Target network:   ${target_network}"
-  _msg_info "                  API key:   ${api_key}"
-  _msg_info "          Cache directory:   ${cache_dir}"
-  _msg_info "     Publishing directory:   ${pub_dir}"
-  _msg_info "         Target publisher:   ${target_publisher}"
-  _msg_info "          GNUPG directory:   ${gnupg_home}"
-  _msg_info "          Target platform:   ${target_platform}"
-  _msg_info "            Signature key:   ${pgp_fingerprint}"
-  _msg_info "          Signature email:   ${pgp_email}"
-  _msg_info "             Target price:   ${target_price}"
-  _msg_info "             Measure unit:   ${measure_unit}"
-  _msg_info "                 Packages:   ${local_packages[*]}"
-  _msg_info "         Output directory:   ${output_dir}"
+  _msg_info "            Publishing date:   ${publishing_date}"
+  _msg_info "               Package type:   ${package_type}"
+  _msg_info "                Repo origin:   ${repo_origin}"
+  _msg_info "             Repo directory:   ${repo_dir}"
+  _msg_info "        Publishing platform:   ${publishing_platform}"
+  _msg_info "    User Repository address:   ${ur_address}"
+  _msg_info "    User Repository version:   ${ur_version}"
+  _msg_info "      Ur Publishers address:   ${up_address}"
+  _msg_info " Package Publishers address:   ${pp_address}"
+  _msg_info "                 User level:   ${user_level}"
+  _msg_info "      Deployments directory:   ${deployments_dir}"
+  _msg_info "             Wallet address:   ${wallet_address}"
+  _msg_info "                Wallet name:   ${wallet_name}"
+  _msg_info "                Wallet path:   ${wallet_path}"
+  _msg_info "            Wallet password:   ${wallet_password}"
+  _msg_info "                Wallet seed:   ${wallet_seed}"
+  _msg_info "             Target network:   ${target_network}"
+  _msg_info "                    API key:   ${api_key}"
+  _msg_info "            Cache directory:   ${cache_dir}"
+  _msg_info "       Publishing directory:   ${pub_dir}"
+  _msg_info "           Target publisher:   ${target_publisher}"
+  _msg_info "            GNUPG directory:   ${gnupg_home}"
+  _msg_info "            Target platform:   ${target_platform}"
+  _msg_info "              Signature key:   ${pgp_fingerprint}"
+  _msg_info "            Signature email:   ${pgp_email}"
+  _msg_info "               Target price:   ${target_price}"
+  _msg_info "               Measure unit:   ${measure_unit}"
+  _msg_info "               List package:   ${list_package}"
+  _msg_info "                   Packages:   ${local_packages[*]}"
+  _msg_info "           Output directory:   ${output_dir}"
 }
 
 _globals
@@ -1370,7 +1550,7 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    't:A:V:ud:N:w:w:p:P:s:n:k:C:p:K:E:W:o:O:cvh?' \
+    't:A:V:ud:N:w:p:s:n:k:C:S:D:P:M:m:L:H:K:E:W:o:O:cvh?' \
     arg; do
   case \
     "${arg}" in
@@ -1386,10 +1566,12 @@ while \
     n) override_target_network="${OPTARG}" ;;
     k) override_api_key="${OPTARG}" ;;
     C) override_repo_dir="${OPTARG}" ;;
-    s) override_repo_origin="${OPTARG}" ;;
-    p) override_publishing_platform="${OPTARG}" ;;
+    S) override_repo_origin="${OPTARG}" ;;
+    D) override_publishing_platform="${OPTARG}" ;;
     P) override_target_publisher="${OPTARG}" ;;
     M) override_target_price="${OPTARG}" ;;
+    m) override_measure_unit="${OPTARG}" ;;
+    L) override_list_package="${OPTARG}" ;;
     H) override_gnupg_home="${OPTARG}" ;;
     K) override_pgp_fingerprint="${OPTARG}" ;;
     E) override_pgp_email="${OPTARG}" ;;
@@ -1426,6 +1608,8 @@ app_opts=(
   "${package_type}"
   "${ur_address}"
   "${ur_version}"
+  "${up_address}"
+  "${pp_address}"
   "${deployments_dir}"
   "${wallet_name}"
   "${wallet_path}"
@@ -1441,6 +1625,7 @@ app_opts=(
   "${target_publisher}"
   "${target_price}"
   "${measure_unit}"
+  "${list_package}"
   "${gnupg_home}"
   "${pgp_fingerprint}"
   "${pgp_email}"

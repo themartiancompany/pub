@@ -381,7 +381,8 @@ _ur_sign() {
     _gpg_opts=() \
     _msg=()
   _msg=(
-    "signing source recipe repo '${_source_repo}/${_pkg}'"
+    "Signing source recipe repo"
+    "archive '${_source_repo}/${_pkg}.tar.xz'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -395,8 +396,14 @@ _ur_sign() {
       "${_source_repo}/${_pkg}.tar.xz.gpg"
   )
   if [[ "${quiet}" == "n" ]]; then
+    _msg=(
+      "Source recipe repo"
+      "contents:"
+    )
+    _msg_info \
+      "${_msg[*]}"
     tree \
-      "${_source_repo}/${_pkg}"
+      "${_source_repo}"
   fi
   gpg \
     "${_gpg_opts[@]}" \
@@ -436,9 +443,10 @@ _ur_upload() {
     _evmfs_uri_opts=() \
     _msg=()
   _msg=(
-    "Uploading signed source recipe"
-    "repository for package"
-    "'${_pkg}' to the EVMFS."
+    "Uploading source recipe"
+    "repository signed archive"
+    "'${_source_dir}/${_pkg}.tar.xz.gpg'"
+    "for package '${_pkg}' to the EVMFS."
   )
   _msg_info \
     "${_msg[*]}"

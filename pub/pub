@@ -686,6 +686,21 @@ _ur_package_list() {
   fi
 }
 
+_evmfs_uri_check() {
+  local \
+    _uri="${1}" \
+    _msg=()
+  if [[ "${_uri}" != "evmfs://"* ]]; then
+    _msg=(
+      "Signed package recipe archive"
+      "URI must be an EVMFS uri."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+}
+
 _ur_pub() {
   local \
     _ur_address="${1}" \
@@ -751,6 +766,8 @@ _ur_pub() {
     )
     _msg_info \
       "${_msg[*]}"
+    _evmfs_uri_check \
+      "${_target_uri}"
   fi
   _publish_call_opts_setup \
     "${_ur_abi}" \

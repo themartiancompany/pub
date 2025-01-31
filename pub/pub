@@ -92,6 +92,7 @@ _global_variables() {
   target_price=""
   measure_unit=""
   target_uri=""
+  recipe_publish=""
   package_list=""
   target_arch=""
   pub_dir=""
@@ -524,6 +525,11 @@ _publish_call_opts_setup() {
     _compiler_output="${3}" \
     _contract_call_opts=()
   _contract_call_opts_setup
+  if [[ "${quiet}" == "n" ]]; then
+    _publish_call_opts+=(
+      -v
+    )
+  fi
   _publish_call_opts+=(
     "${_contract_call_opts[@]}"
     -t
@@ -586,6 +592,12 @@ _ur_publisher_check() {
     _up_compiler_output \
     _publisher_check_call_opts=() \
     _msg=()
+  _msg=(
+    "Checking if publisher '${_target_publisher}'"
+    "is correctly registered on the User Repository."
+  )
+  _msg_info \
+    "${_msg[*]}"
   _contract_artifacts_auto_detect \
     "${_deployments_dir}" \
     "${_target_network}" \
@@ -636,6 +648,13 @@ _ur_package_list() {
     _pp_bytecode \
     _pp_compiler_output \
     _listed
+  _msg=(
+    "Checking if publisher"
+    "'${_target_publisher}' is already"
+    "listed for package '${_package}'."
+  )
+  _msg_info \
+    "${_msg[*]}"
   _contract_artifacts_auto_detect \
     "${_deployments_dir}" \
     "${_target_network}" \
@@ -657,25 +676,33 @@ _ur_package_list() {
       "${_target_publisher}")"
   if [[ "${_listed}" == 0 ]]; then
     _msg=(
-      "Listing package '${_package}'"
-      "for publisher '${_target_publisher}'."
+      "Publisher '${_target_publisher}' is not"
+      "listed for package '${_package}',"
+      "listing now."
     )
     _msg_info \
       "${_msg[*]}"
     _ur_publisher_check \
       "${_up_address}" \
-      "${ur_version}" \
+      "${_ur_version}" \
       "${_deployments_dir}" \
       "${_target_network}" \
       "${_target_publisher}"
     evm-contract-call \
-      "${_publisher_check_call_opts[@]}" \
+      "${_package_list_call_opts[@]}" \
       "${_pp_address}" \
       "listPackagePublisher" \
       "${_ur_address}" \
       "${_up_address}" \
       "${_target_publisher}" \
       "${_package}"
+    _msg=(
+      "Publisher '${_target_publisher}' has"
+      "been correctly listed for"
+      "package '${_package}'."
+    )
+    _msg_info \
+      "${_msg[*]}"
   elif (( 0 < "${_listed}" )); then
     _msg=(
       "Package '${_package}' already listed"
@@ -718,11 +745,12 @@ _ur_pub() {
     _target_price="${13}" \
     _measure_unit="${14}" \
     _target_uri="${15}" \
-    _package_list="${16}" \
-    _work_dir="${17}" \
-    _gnupg_home="${18}" \
-    _key_fingerprint="${19}" \
-    _package="${20}" \
+    _recipe_publish="${16}" \
+    _package_list="${17}" \
+    _work_dir="${18}" \
+    _gnupg_home="${19}" \
+    _key_fingerprint="${20}" \
+    _package="${21}" \
     _msg=() \
     _ur_abi \
     _ur_bytecode \
@@ -740,66 +768,74 @@ _ur_pub() {
     "UserRepository" \
     "_ur" \
     "${_ur_version}"
-  if [[ "${_target_uri}" == "" ]]; then
-    _ur_compress \
-      "${_work_dir}" \
-      "${_package}"
-    _ur_sign \
-      "${_work_dir}" \
-      "${_package}" \
-      "${_gnupg_home}" \
-      "${_key_fingerprint}"
-    _ur_upload \
-      "${_work_dir}" \
-      "${_package}" \
-      "${_wallet_name}" \
-      "${_wallet_path}" \
-      "${_wallet_password}" \
-      "${_wallet_seed}" \
-      "${_target_network}" \
-      "${_api_key_path}"
-  elif [[ "${_target_uri}" != "" ]]; then
+  if [[ "${_recipe_publish}" == "n" ]]; then
     _msg=(
-      "Signed recipe archive URI '${_target_uri}'"
-      "specified through command line, skipping"
-      "upload."
+      "Skipping recipe publishing."
     )
     _msg_info \
       "${_msg[*]}"
-    _evmfs_uri_check \
+  elif [[ "${_recipe_publish}" == "y" ]]; then
+    if [[ "${_target_uri}" == "" ]]; then
+      _ur_compress \
+        "${_work_dir}" \
+        "${_package}"
+      _ur_sign \
+        "${_work_dir}" \
+        "${_package}" \
+        "${_gnupg_home}" \
+        "${_key_fingerprint}"
+      _ur_upload \
+        "${_work_dir}" \
+        "${_package}" \
+        "${_wallet_name}" \
+        "${_wallet_path}" \
+        "${_wallet_password}" \
+        "${_wallet_seed}" \
+        "${_target_network}" \
+        "${_api_key_path}"
+    elif [[ "${_target_uri}" != "" ]]; then
+      _msg=(
+        "Signed recipe archive URI '${_target_uri}'"
+        "specified through command line, skipping"
+        "upload."
+      )
+      _msg_info \
+        "${_msg[*]}"
+      _evmfs_uri_check \
+        "${_target_uri}"
+    fi
+    _publish_call_opts_setup \
+      "${_ur_abi}" \
+      "${_ur_bytecode}" \
+      "${_ur_compiler_output}"
+    _msg=(
+      "Publishing package '${_package}'"
+      "for publisher '${_target_publisher}'"
+      "with URI '${_target_uri}' and"
+      "price '${_target_price}'"
+      "'${_measure_unit}' on the Ur."
+    )
+    _msg_info \
+      "${_msg[*]}"
+    if [[ "${_measure_unit}" == "ether" ]]; then
+      _target_price="$( \
+        _ether_to_wei \
+          "${_target_price}")"
+    fi
+    evm-contract-call \
+      "${_publish_call_opts[@]}" \
+      "${_ur_address}" \
+      "publishRecipe" \
+      "${_package}" \
+      "${_target_publisher}" \
+      "${_target_price}" \
       "${_target_uri}"
+    _msg=(
+      "Package '${_package}' correctly published."
+    )
+    _msg_info \
+      "${_msg[*]}"
   fi
-  _publish_call_opts_setup \
-    "${_ur_abi}" \
-    "${_ur_bytecode}" \
-    "${_ur_compiler_output}"
-  _msg=(
-    "Publishing package '${_package}'"
-    "for publisher '${_target_publisher}'"
-    "with URI '${_target_uri}' and"
-    "price '${_target_price}'"
-    "'${_measure_unit}' on the Ur."
-  )
-  _msg_info \
-    "${_msg[*]}"
-  if [[ "${_measure_unit}" == "ether" ]]; then
-    _target_price="$( \
-      _ether_to_wei \
-        "${_target_price}")"
-  fi
-  evm-contract-call \
-    "${_publish_call_opts[@]}" \
-    "${_ur_address}" \
-    "publishRecipe" \
-    "${_package}" \
-    "${_target_publisher}" \
-    "${_target_price}" \
-    "${_target_uri}"
-  _msg=(
-    "Package correctly published."
-  )
-  _msg_info \
-    "${_msg[*]}"
   if [[ "${_package_list}" == "y" ]]; then
     _ur_package_list \
       "${_pp_address}" \
@@ -933,6 +969,7 @@ _pub_opts_setup() {
       "${_target_price}"
       "${_measure_unit}"
       "${_target_uri}"
+      "${_recipe_publish}"
       "${_package_list}"
       "${_source_tmp_dir}"
       "${_gnupg_home}"
@@ -1099,11 +1136,12 @@ _pub() {
     _target_price="${19}" \
     _measure_unit="${20}" \
     _target_uri="${21}" \
-    _package_list="${22}" \
-    _gnupg_home="${23}" \
-    _key_fingerprint="${24}" \
-    _key_email="${25}" \
-    _platform="${26}" \
+    _recipe_publish="${22}" \
+    _package_list="${23}" \
+    _gnupg_home="${24}" \
+    _key_fingerprint="${25}" \
+    _key_email="${26}" \
+    _platform="${27}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
@@ -1115,7 +1153,7 @@ _pub() {
     _source_tmp_dir \
     _msg=()
   shift \
-    26
+    27
   _packages=(
     "$@"
   )
@@ -1406,6 +1444,10 @@ _set_overrides() {
     "uri" \
     ""
   _set_override \
+    "recipe" \
+    "publish" \
+    "y"
+  _set_override \
     "package" \
     "list" \
     "y"
@@ -1567,6 +1609,9 @@ $(_display_networks \
                                package recipe archive evmfs URI
                                and skip upload.
                                Default: ${target_uri}
+     -R <y/n>                  If set to 'y', it will skip
+                               recipe publishing.
+                               Default: ${recipe_publish}
      -L <y/n>                  Whether to list package
                                for user search. Requires to
 			       be a registered Ur publisher.
@@ -1626,6 +1671,7 @@ _show_config() {
   _msg_info "               Target price:   ${target_price}"
   _msg_info "               Measure unit:   ${measure_unit}"
   _msg_info "          Target recipe URI:   ${target_uri}"
+  _msg_info "             Recipe publish:   ${recipe_publish}"
   _msg_info "               List package:   ${package_list}"
   _msg_info "                   Packages:   ${local_packages[*]}"
   _msg_info "           Output directory:   ${output_dir}"
@@ -1638,7 +1684,7 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    't:A:V:ud:N:w:p:s:n:k:C:S:D:P:M:m:U:L:H:K:E:W:o:O:cvh?' \
+    't:A:V:ud:N:w:p:s:n:k:C:S:D:P:M:m:U:R:L:H:K:E:W:o:O:cvh?' \
     arg; do
   case \
     "${arg}" in
@@ -1660,6 +1706,7 @@ while \
     M) override_target_price="${OPTARG}" ;;
     m) override_measure_unit="${OPTARG}" ;;
     U) override_target_uri="${OPTARG}" ;;
+    R) override_recipe_publish="${OPTARG}" ;;
     L) override_package_list="${OPTARG}" ;;
     H) override_gnupg_home="${OPTARG}" ;;
     K) override_pgp_fingerprint="${OPTARG}" ;;
@@ -1715,6 +1762,7 @@ app_opts=(
   "${target_price}"
   "${measure_unit}"
   "${target_uri}"
+  "${recipe_publish}"
   "${package_list}"
   "${gnupg_home}"
   "${pgp_fingerprint}"

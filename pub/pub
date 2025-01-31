@@ -91,7 +91,8 @@ _global_variables() {
   target_platform=""
   target_price=""
   measure_unit=""
-  list_package=""
+  target_uri=""
+  package_list=""
   target_arch=""
   pub_dir=""
   pgp_fingerprint=""
@@ -701,20 +702,20 @@ _ur_pub() {
     _target_publisher="${12}" \
     _target_price="${13}" \
     _measure_unit="${14}" \
-    _list_package="${15}" \
-    _work_dir="${16}" \
-    _gnupg_home="${17}" \
-    _key_fingerprint="${18}" \
-    _package="${19}" \
+    _target_uri="${15}" \
+    _package_list="${16}" \
+    _work_dir="${17}" \
+    _gnupg_home="${18}" \
+    _key_fingerprint="${19}" \
+    _package="${20}" \
     _msg=() \
     _ur_abi \
     _ur_bytecode \
     _ur_compiler_output \
-    _target_uri \
     _publish_call_opts=()
   _msg=(
     "Publishing package '${_package}'"
-    "on the Ur"
+    "on the Ur."
   )
   _msg_info \
     "${_msg[*]}"
@@ -724,27 +725,46 @@ _ur_pub() {
     "UserRepository" \
     "_ur" \
     "${_ur_version}"
-  _ur_compress \
-    "${_work_dir}" \
-    "${_package}"
-  _ur_sign \
-    "${_work_dir}" \
-    "${_package}" \
-    "${_gnupg_home}" \
-    "${_key_fingerprint}"
-  _ur_upload \
-    "${_work_dir}" \
-    "${_package}" \
-    "${_wallet_name}" \
-    "${_wallet_path}" \
-    "${_wallet_password}" \
-    "${_wallet_seed}" \
-    "${_target_network}" \
-    "${_api_key_path}"
+  if [[ "${_target_uri}" == "" ]]; then
+    _ur_compress \
+      "${_work_dir}" \
+      "${_package}"
+    _ur_sign \
+      "${_work_dir}" \
+      "${_package}" \
+      "${_gnupg_home}" \
+      "${_key_fingerprint}"
+    _ur_upload \
+      "${_work_dir}" \
+      "${_package}" \
+      "${_wallet_name}" \
+      "${_wallet_path}" \
+      "${_wallet_password}" \
+      "${_wallet_seed}" \
+      "${_target_network}" \
+      "${_api_key_path}"
+  elif [[ "${_target_uri}" != "" ]]; then
+    _msg=(
+      "Signed recipe archive URI '${_target_uri}'"
+      "specified through command line, skipping"
+      "upload."
+    )
+    _msg_info \
+      "${_msg[*]}"
+  fi
   _publish_call_opts_setup \
     "${_ur_abi}" \
     "${_ur_bytecode}" \
     "${_ur_compiler_output}"
+  _msg=(
+    "Publishing package '${_package}'"
+    "for publisher '${_target_publisher}'"
+    "with URI '${_target_uri}' and"
+    "price '${_target_price}'"
+    "'${_measure_unit}' on the Ur."
+  )
+  _msg_info \
+    "${_msg[*]}"
   if [[ "${_measure_unit}" == "ether" ]]; then
     _target_price="$( \
       _ether_to_wei \
@@ -758,12 +778,19 @@ _ur_pub() {
     "${_target_publisher}" \
     "${_target_price}" \
     "${_target_uri}"
-  _ur_package_list \
-    "${_pp_address}" \
-    "${_ur_address}" \
-    "${_up_address}" \
-    "${_package}" \
-    "${_target_publisher}"
+  _msg=(
+    "Package correctly published."
+  )
+  _msg_info \
+    "${_msg[*]}"
+  if [[ "${_package_list}" == "y" ]]; then
+    _ur_package_list \
+      "${_pp_address}" \
+      "${_ur_address}" \
+      "${_up_address}" \
+      "${_package}" \
+      "${_target_publisher}"
+  fi
 }
 
 _fur_pub() {
@@ -888,7 +915,8 @@ _pub_opts_setup() {
       "${_target_publisher}"
       "${_target_price}"
       "${_measure_unit}"
-      "${_list_package}"
+      "${_target_uri}"
+      "${_package_list}"
       "${_source_tmp_dir}"
       "${_gnupg_home}"
       "${_key_fingerprint}"
@@ -1053,11 +1081,12 @@ _pub() {
     _target_publisher="${18}" \
     _target_price="${19}" \
     _measure_unit="${20}" \
-    _list_package="${21}" \
-    _gnupg_home="${22}" \
-    _key_fingerprint="${23}" \
-    _key_email="${24}" \
-    _platform="${25}" \
+    _target_uri="${21}" \
+    _package_list="${22}" \
+    _gnupg_home="${23}" \
+    _key_fingerprint="${24}" \
+    _key_email="${25}" \
+    _platform="${26}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
@@ -1069,7 +1098,7 @@ _pub() {
     _source_tmp_dir \
     _msg=()
   shift \
-    25
+    26
   _packages=(
     "$@"
   )
@@ -1356,8 +1385,12 @@ _set_overrides() {
     "unit" \
     "ether"
   _set_override \
-    "list" \
+    "target" \
+    "uri" \
+    ""
+  _set_override \
     "package" \
+    "list" \
     "y"
   _contract_setup_auto_detect \
     "ur" \
@@ -1513,10 +1546,14 @@ $(_display_networks \
                                currency. It can be 'ether'
                                and 'wei'.
                                Default: ${measure_unit}
+     -U <target_uri>           To manually specify the signed
+                               package recipe archive evmfs URI
+                               and skip upload.
+                               Default: ${target_uri}
      -L <y/n>                  Whether to list package
                                for user search. Requires to
 			       be a registered Ur publisher.
-                               Default: ${list_package}
+                               Default: ${package_list}
      -H <gnupg_home>           GNUPG home directory.
                                Default: ${gnupg_home}
      -K <fingerprint>          OpenPG signature key.
@@ -1571,7 +1608,8 @@ _show_config() {
   _msg_info "            Signature email:   ${pgp_email}"
   _msg_info "               Target price:   ${target_price}"
   _msg_info "               Measure unit:   ${measure_unit}"
-  _msg_info "               List package:   ${list_package}"
+  _msg_info "          Target recipe URI:   ${target_uri}"
+  _msg_info "               List package:   ${package_list}"
   _msg_info "                   Packages:   ${local_packages[*]}"
   _msg_info "           Output directory:   ${output_dir}"
 }
@@ -1583,7 +1621,7 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    't:A:V:ud:N:w:p:s:n:k:C:S:D:P:M:m:L:H:K:E:W:o:O:cvh?' \
+    't:A:V:ud:N:w:p:s:n:k:C:S:D:P:M:m:U:L:H:K:E:W:o:O:cvh?' \
     arg; do
   case \
     "${arg}" in
@@ -1604,7 +1642,8 @@ while \
     P) override_target_publisher="${OPTARG}" ;;
     M) override_target_price="${OPTARG}" ;;
     m) override_measure_unit="${OPTARG}" ;;
-    L) override_list_package="${OPTARG}" ;;
+    U) override_target_uri="${OPTARG}" ;;
+    L) override_package_list="${OPTARG}" ;;
     H) override_gnupg_home="${OPTARG}" ;;
     K) override_pgp_fingerprint="${OPTARG}" ;;
     E) override_pgp_email="${OPTARG}" ;;
@@ -1658,7 +1697,8 @@ app_opts=(
   "${target_publisher}"
   "${target_price}"
   "${measure_unit}"
-  "${list_package}"
+  "${target_uri}"
+  "${package_list}"
   "${gnupg_home}"
   "${pgp_fingerprint}"
   "${pgp_email}"

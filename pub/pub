@@ -549,6 +549,11 @@ _package_list_call_opts_setup() {
     -t
       "static"
   )
+  if [[ "${quiet}" == "n" ]]; then
+    _package_list_call_opts+=(
+      -v
+    )
+  fi
   _package_list_call_opts+=(
     "${_contract_call_opts[@]}"
     -t

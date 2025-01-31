@@ -634,7 +634,7 @@ _ur_publisher_check() {
   fi
 }
 
-_ur_package_list() {
+_ur_package_publisher_list() {
   local \
     _pp_address="${1}" \
     _ur_address="${2}" \
@@ -694,8 +694,8 @@ _ur_package_list() {
       "listPackagePublisher" \
       "${_ur_address}" \
       "${_up_address}" \
-      "${_target_publisher}" \
-      "${_package}"
+      "${_package}" \
+      "${_target_publisher}"
     _msg=(
       "Publisher '${_target_publisher}' has"
       "been correctly listed for"
@@ -837,7 +837,7 @@ _ur_pub() {
       "${_msg[*]}"
   fi
   if [[ "${_package_list}" == "y" ]]; then
-    _ur_package_list \
+    _ur_package_publisher_list \
       "${_pp_address}" \
       "${_ur_address}" \
       "${_up_address}" \

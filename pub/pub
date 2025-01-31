@@ -484,6 +484,14 @@ _ur_upload() {
     "${_evmfs_opts[@]}" \
     publish \
       "${_source_dir}/${_pkg}.tar.xz.gpg"
+  _msg=(
+    "Getting uploaded source recipe"
+    "repository signed archive"
+    "'${_source_dir}/${_pkg}.tar.xz.gpg'"
+    "EVMFS uri."
+  )
+  _msg_info \
+    "${_msg[*]}"
   _target_uri="$( \
     evmfs \
       "${_evmfs_uri_opts[@]}" \

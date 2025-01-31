@@ -909,8 +909,8 @@ _repo_dir_setup() {
       -p \
         "${_tmp_dir}")"
   _msg=(
-    "setting up repository directory"
-    "'${_repo_dir}'"
+    "Setting up repository directory"
+    "'${_repo_dir}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -934,9 +934,9 @@ _binary_packages_tmp_dir_setup() {
       -p \
         "${_tmp_dir}")"
   _msg=(
-    "setting up temporary"
+    "Setting up temporary"
     "binary packages directory"
-    "'${_binary_packages_tmp_dir}'"
+    "'${_binary_packages_tmp_dir}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -960,9 +960,9 @@ _pub_repo_setup() {
       -p \
         "${_tmp_dir}")"
   _msg=(
-    "setting up temporary"
+    "Setting up temporary"
     "publication repository directory"
-    "'${_pub_repo}'"
+    "'${_pub_repo}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -986,9 +986,9 @@ _source_tmp_dir_setup() {
       -p \
         "${_tmp_dir}")"
   _msg=(
-    "setting up temporary"
+    "Setting up temporary"
     "source package directory"
-    "'${_source_tmp_dir}'"
+    "'${_source_tmp_dir}'."
   )
   _msg_info \
     "${_msg[*]}"

@@ -1273,6 +1273,20 @@ _key_latest_select() {
       sort \
         -V)
   )
+  if [[ "${_keys_sorted}" == "" ]]; then
+    _msg=(
+      "No keys in '${_keyserver_receive_dir}',"
+      "create a key with"
+      "'evm-gpg new <your_user_name> <your_full_name>',"
+      "publish it with"
+      "'evm-openpgp-keyserver-publish <your_wallet_address>'"
+      "and then run"
+      "'evm-openpgp-keyserver-receive <your_wallet_address>'."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
   _msg_info \
     "selecting key '${_keys_sorted[-1]}'"
   _fingerprint="$( \

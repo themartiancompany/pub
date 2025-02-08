@@ -426,7 +426,9 @@ _ur_compress() {
     "${_msg[*]}"
   XZ_OPT="-e9" \
   tar \
-    'cfJ' \
+    --transform \
+      "s|^${_source_dir}/${_pkg}|${_pkg}|" \
+    -cfJ \
     "${_source_dir}/${_pkg}.tar.xz" \
     "${_source_dir}/${_pkg}"
 }

@@ -428,8 +428,9 @@ _ur_compress() {
   tar \
     --transform \
       "s|^${_source_dir}/${_pkg}|${_pkg}|" \
-    -cfJ \
-    -f \
+    --create \
+    --xz \
+    --file \
       "${_source_dir}/${_pkg}.tar.xz" \
     "${_source_dir}/${_pkg}"
 }

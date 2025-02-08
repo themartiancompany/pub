@@ -429,7 +429,8 @@ _ur_compress() {
     --transform \
       "s|^${_source_dir}/${_pkg}|${_pkg}|" \
     -cfJ \
-    "${_source_dir}/${_pkg}.tar.xz" \
+    -f \
+      "${_source_dir}/${_pkg}.tar.xz" \
     "${_source_dir}/${_pkg}"
 }
 

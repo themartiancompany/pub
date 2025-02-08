@@ -426,12 +426,12 @@ _ur_compress() {
     "${_msg[*]}"
   XZ_OPT="-e9" \
   tar \
-    --transform \
-      "s|^${_source_dir}/${_pkg}|${_pkg}|" \
     --create \
-    --xz \
     --file \
       "${_source_dir}/${_pkg}.tar.xz" \
+    --xz \
+    --transform \
+      "s|^${_source_dir}/${_pkg}|${_pkg}|" \
     "${_source_dir}/${_pkg}"
 }
 

@@ -1160,12 +1160,15 @@ _pub() {
     _pub_repo \
     _binary_packages_tmp_dir \
     _source_tmp_dir \
-    _msg=()
+    _msg=() \
+    _oldpwd
   shift \
     27
   _packages=(
     "$@"
   )
+  _oldpwd="$( \
+    pwd)"
   if [[ "${_package_type}" == "source" && \
         "${_publishing_platform}" == "fur" ]]; then
     _msg=(
@@ -1225,7 +1228,7 @@ _pub() {
       "${_pub_opts[@]}"
   done
   cd \
-    "${OLDPWD}"
+    "${_oldpwd}"
 }
 
 _key_latest_select() {

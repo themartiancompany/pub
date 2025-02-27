@@ -489,6 +489,8 @@ _ur_upload() {
         "${_target_network}"
       -k
         "${_api_key_path}"
+      -m
+        "standalone"
     )
   else
     _evmfs_opts+=(

@@ -16,7 +16,9 @@ pub *[options]* *package*
 Description
 ===========
 
-pub is the reference utility to publish packages on the Ur.
+*pub* is the reference utility to publish packages on the Ur,
+the decentralized, distributed, uncensorable, undeletable
+user repository and application store of Life and DogeOS.
 
 
 Environment variables

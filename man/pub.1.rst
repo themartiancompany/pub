@@ -35,5 +35,6 @@ See also
 ========
 
 * pub -h
+* ur
 
 .. include:: variables.rst

@@ -26,7 +26,9 @@ DOC_DIR=$(DESTDIR)$(PREFIX)/share/doc/$(_PROJECT)
 MAN_DIR?=$(DESTDIR)$(PREFIX)/share/man
 BIN_DIR=$(DESTDIR)$(PREFIX)/bin
 
-DOC_FILES=$(wildcard *.rst)
+DOC_FILES=\
+  $(wildcard *.rst) \
+  $(wildcard *.md)
 SCRIPT_FILES=$(wildcard pub/*)
 
 all:

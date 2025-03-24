@@ -1578,10 +1578,11 @@ _usage() {
     _get \
       "deployments" \
       "dir")/${_ur}"
-  _networks="$( \
+  _networks=( $( \
     evm-contract-deployment-networks \
       -A \
-      "${_ur_deployment}")"
+      "${_ur_deployment}")
+  )
   local \
     _usage_text
   IFS='' \

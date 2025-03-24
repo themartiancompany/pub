@@ -1601,7 +1601,7 @@ Usage:
 
   networks:
 $(_display_networks \
-     "${_networks[*]}")
+     "${_networks[@]}")
 
   options:
      -A <ur_address>           Address of the 'User Repository'

@@ -27,12 +27,17 @@ _bin="$( \
       command \
         -v \
 	  "env")")"
-_lib="${_bin}/../lib"
-_share="${_bin}/../share"
-source \
-  "${_lib}/libcrash-bash/crash-bash"
-source \
-  "${_lib}/libevm/libevm"
+_lib="$( \
+  realpath \
+    "${_bin}/../lib")"
+_crash_bash="${_lib}/libcrash-bash/crash-bash"
+_libevm="${_lib}/libevm/libevm"
+_sourced \
+  "${_crash_bash}" 2>/dev/null || \
+  source \
+    "${_crash_bash}"
+_sourced \
+  "${_libevm}"
 
 # Check all required programs
 # are available
@@ -92,15 +97,8 @@ _global_variables() {
   pp_version=""
   up_address=""
   up_version=""
-  deployments_dir=""
-  user_level=""
-  wallet_name=""
-  wallet_path=""
-  wallet_password=""
-  wallet_seed=""
-  wallet_address=""
-  target_network=""
-  api_key=""
+  _libevm_global_variables
+  _libevm_app_global_variables
   cache_dir=""
   gnupg_home=""
   repo_dir=""
@@ -1435,10 +1433,6 @@ _set_overrides() {
     "platform" \
     "ur"
   _set_override \
-    "wallet" \
-    "name" \
-    "default"
-  _set_override \
     "user" \
     "level" \
     "n"
@@ -1451,29 +1445,10 @@ _set_overrides() {
     "${user_level}"
   _api_key_auto_detect \
     "${target_network}"
-  _set_override \
-    "wallet" \
-    "path" \
-    "$(_wallet_path_get \
-         "evm-wallet" \
-         "${wallet_name}")"
-  _secret_auto_detect \
-    "seed" \
-    "seed" \
+  _wallet_overrides_set \
     "evm-wallet" \
-    "${wallet_name}"
-  _secret_auto_detect \
-    "password" \
-    "plain" \
-    "evm-wallet" \
-    "${wallet_name}"
-  _set_override \
-    "wallet" \
-    "address" \
-    "$(evm-wallet \
-         get \
-	   "${wallet_name}" \
-           "address")"
+    "default" \
+    "y"
   _set_override \
     "target" \
     "publisher" \
@@ -1558,7 +1533,7 @@ _set_overrides() {
     )
     _msg=(
       "No input package given,"
-      "publishing ${local_packages[*]}"
+      "publishing '${local_packages[*]}'."
     )
     _msg_info \
       "${_msg[*]}"
@@ -1574,14 +1549,12 @@ _usage() {
     _networks \
     _usage_text
   _ur="UserRepository"
-  _ur_deployment="$( \
-    _get \
-      "deployments" \
-      "dir")/${_ur}"
-  _networks="$( \
+  _ur_deployment="${deployments_dir}/${_ur}"
+  _networks=( $( \
     evm-contract-deployment-networks \
       -A \
-      "${_ur_deployment}")"
+      "${_ur_deployment}")
+  )
   local \
     _usage_text
   IFS='' \
@@ -1594,46 +1567,15 @@ _usage() {
 Build recipes and binary packages publisher tool.
 
 Usage:
-  $(_get "app" "name")
+  ${app_name}
     [options]
     [packages]
 
   networks:
 $(_display_networks \
-     "${_networks[*]}")
+     "${_networks[@]}")
 
   options:
-     -A <ur_address>           Address of the 'User Repository'
-                               contract on the network.
-                               Default: ${ur_address}
-     -B <up_address>           Address of the 'User Repository
-                               Publishers' contract on the
-                               network.
-                               Default: ${up_address}
-     -C <pp_address>           Address of the 'Package Publishers'
-                               contract on the network.
-                               Default: ${pp_address}
-     -V <ur_version>           Version of the target 'User Repository
-                               Publishers' contract.
-                               Default: ${ur_version}
-     -u                        Whether to retrieve publishers' contract
-                               address from user directory or custom
-                               deployment.
-                               Default: ${user_level}
-     -d <deployments_dir>      Contracts deployments directory.
-                               Default: ${deployments_dir}
-     -N <wallet_name>          Wallet name.
-                               Default: ${wallet_name}
-     -w <wallet_path>          Wallet path.
-                               Default: ${wallet_path}
-     -p <wallet_password>      Wallet password.
-                               Default: ${wallet_password}
-     -s <wallet_seed>          Wallet seed path.
-                               Default: ${wallet_seed}
-     -n <network>              EVM network name (${_networks[*]}).
-                               Default: ${target_network}
-     -k <api_key>              Etherscan-like service key.
-                               Default: ${api_key}
      -W <repo_dir>             Repo directory.
                                Default: ${repo_dir}
      -S <origin>               Repo origin.
@@ -1673,6 +1615,45 @@ $(_display_networks \
                                which the binary package is built
                                ('arch', 'termux').
                                Default: ${target_platform}
+
+  contract options:
+     -A <ur_address>           Address of the 'User Repository'
+                               contract on the network.
+                               Default: ${ur_address}
+     -B <up_address>           Address of the 'User Repository
+                               Publishers' contract on the
+                               network.
+                               Default: ${up_address}
+     -C <pp_address>           Address of the 'Package Publishers'
+                               contract on the network.
+                               Default: ${pp_address}
+     -V <ur_version>           Version of the target 'User Repository
+                               Publishers' contract.
+                               Default: ${ur_version}
+
+  libevm options:
+     -u                        Whether to retrieve publishers' contract
+                               address from user directory or custom
+                               deployment.
+                               Default: ${user_level}
+     -d <deployments_dir>      Contracts deployments directory.
+                               Default: ${deployments_dir}
+     -n <network>              EVM network name (${_networks[*]}).
+                               Default: ${target_network}
+
+  credentials options:
+     -N <wallet_name>          Wallet name.
+                               Default: ${wallet_name}
+     -w <wallet_path>          Wallet path.
+                               Default: ${wallet_path}
+     -p <wallet_password>      Wallet password.
+                               Default: ${wallet_password}
+     -s <wallet_seed>          Wallet seed path.
+                               Default: ${wallet_seed}
+     -k <api_key>              Etherscan-like service key.
+                               Default: ${api_key}
+
+  unused options:
      -o <output_dir>           Output directory.
                                Default: ${output_dir}
 
@@ -1695,20 +1676,6 @@ _show_config() {
   _msg_info "                Repo origin:   ${repo_origin}"
   _msg_info "             Repo directory:   ${repo_dir}"
   _msg_info "        Publishing platform:   ${publishing_platform}"
-  _msg_info "    User Repository address:   ${ur_address}"
-  _msg_info "    User Repository version:   ${ur_version}"
-  _msg_info "      Ur Publishers address:   ${up_address}"
-  _msg_info " Package Publishers address:   ${pp_address}"
-  _msg_info "                 User level:   ${user_level}"
-  _msg_info "      Deployments directory:   ${deployments_dir}"
-  _msg_info "             Wallet address:   ${wallet_address}"
-  _msg_info "                Wallet name:   ${wallet_name}"
-  _msg_info "                Wallet path:   ${wallet_path}"
-  _msg_info "            Wallet password:   ${wallet_password}"
-  _msg_info "                Wallet seed:   ${wallet_seed}"
-  _msg_info "             Target network:   ${target_network}"
-  _msg_info "                    API key:   ${api_key}"
-  _msg_info "            Cache directory:   ${cache_dir}"
   _msg_info "       Publishing directory:   ${pub_dir}"
   _msg_info "           Target publisher:   ${target_publisher}"
   _msg_info "            GNUPG directory:   ${gnupg_home}"
@@ -1721,11 +1688,31 @@ _show_config() {
   _msg_info "             Recipe publish:   ${recipe_publish}"
   _msg_info "               List package:   ${package_list}"
   _msg_info "                   Packages:   ${local_packages[*]}"
+  _msg_info "   Contract configuration:"
+  _msg_info "    User Repository address:   ${ur_address}"
+  _msg_info "    User Repository version:   ${ur_version}"
+  _msg_info "      Ur Publishers address:   ${up_address}"
+  _msg_info " Package Publishers address:   ${pp_address}"
+  _msg_info "     LibEVM configuration:"
+  _msg_info "                 User level:   ${user_level}"
+  _msg_info "      Deployments directory:   ${deployments_dir}"
+  _msg_info "             Target network:   ${target_network}"
+  _msg_info "Credentials configuration:"
+  _msg_info "             Wallet address:   ${wallet_address}"
+  _msg_info "                Wallet name:   ${wallet_name}"
+  _msg_info "                Wallet path:   ${wallet_path}"
+  _msg_info "            Wallet password:   ${wallet_password}"
+  _msg_info "                Wallet seed:   ${wallet_seed}"
+  _msg_info "                    API key:   ${api_key}"
+  _msg_info "Application configuration:"
+  _msg_info "            Cache directory:   ${cache_dir}"
   _msg_info "           Output directory:   ${output_dir}"
 }
 
 _globals
 _global_variables
+_libevm_global_variables
+_libevm_app_global_variables
 _requirements
 # shellcheck disable=SC2004
 # shellcheck disable=SC2034

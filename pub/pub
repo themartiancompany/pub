@@ -488,7 +488,7 @@ _ur_upload() {
       -k
         "${_api_key_path}"
       -m
-        "standalone"
+        "bulk"
     )
   else
     _evmfs_opts+=(

@@ -45,6 +45,9 @@ Options
 -m measure_unit         Measure unit for the network
                         currency. It can be 'ether'
                         and 'wei'.
+-g price_currency       Address of the \*RC-20 token
+                        the application is being sold
+                        for.
 -R <y/n>                If set to 'y', it will skip
                         recipe publishing.
 -U target_uri           To manually specify the signed

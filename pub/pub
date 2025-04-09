@@ -97,8 +97,6 @@ _global_variables() {
   pp_version=""
   up_address=""
   up_version=""
-  _libevm_global_variables
-  _libevm_app_global_variables
   cache_dir=""
   gnupg_home=""
   repo_dir=""
@@ -108,6 +106,7 @@ _global_variables() {
   target_platform=""
   target_price=""
   measure_unit=""
+  price_currency=""
   target_uri=""
   recipe_publish=""
   package_list=""
@@ -772,13 +771,14 @@ _ur_pub() {
     _target_publisher="${12}" \
     _target_price="${13}" \
     _measure_unit="${14}" \
-    _target_uri="${15}" \
-    _recipe_publish="${16}" \
-    _package_list="${17}" \
-    _work_dir="${18}" \
-    _gnupg_home="${19}" \
-    _key_fingerprint="${20}" \
-    _package="${21}" \
+    _price_currency="${15}" \
+    _target_uri="${16}" \
+    _recipe_publish="${17}" \
+    _package_list="${18}" \
+    _work_dir="${19}" \
+    _gnupg_home="${20}" \
+    _key_fingerprint="${21}" \
+    _package="${22}" \
     _msg=() \
     _ur_abi \
     _ur_bytecode \
@@ -841,7 +841,8 @@ _ur_pub() {
       "for publisher '${_target_publisher}'"
       "with URI '${_target_uri}' and"
       "price '${_target_price}'"
-      "'${_measure_unit}' on the Ur."
+      "'${_measure_unit}' and currency"
+      "'${_price_currency}' on the Ur."
     )
     _msg_info \
       "${_msg[*]}"
@@ -856,6 +857,7 @@ _ur_pub() {
       "publishRecipe" \
       "${_package}" \
       "${_target_publisher}" \
+      "${_price_currency}" \
       "${_target_price}" \
       "${_target_uri}"
     _msg=(
@@ -1409,6 +1411,16 @@ _package_type_auto_detect() {
     "${_type}"
 }
 
+_price_currency_auto_detect() {
+  local \
+    _address_null
+  _address_null="0x0000000000000000000000000000000000000000"
+  _set_override \
+    "price" \
+    "currency" \
+    "${_address_null}"
+}
+
 # Set defaults and, if present, overrides
 # from arch-grub command line option parameters
 _set_overrides() {
@@ -1461,6 +1473,7 @@ _set_overrides() {
     "measure" \
     "unit" \
     "ether"
+  _price_currency_auto_detect
   _set_override \
     "target" \
     "uri" \
@@ -1715,52 +1728,79 @@ _libevm_global_variables
 _libevm_app_global_variables
 _requirements
 # shellcheck disable=SC2004
-# shellcheck disable=SC2034
+getopts_opts="$( \
+  printf \
+    "%s" \
+    "t:C:S:D:P:M:m:g:U:R:L:K:E:o:O:" \
+    "A:V:" \
+    "$(_libevm_app_getopts_params_get)" \
+    "n:" \
+    "$(_wallet_getopts_params_get)" \
+    "H:W:cvh")"
 while \
   getopts \
-    't:A:V:ud:N:w:p:s:n:k:C:S:D:P:M:m:U:R:L:H:K:E:W:o:O:cvh?' \
+    "${getopts_opts}" \
     arg; do
+  _wallet_getopts_case
+  _libevm_app_getopts_case
   case \
     "${arg}" in
-    t) override_package_type="${OPTARG}" ;;
-    A) override_ur_address="${OPTARG}" ;;
-    V) override_ur_version="${OPTARG}" ;;
-    u) override_user_level="y" ;;
-    d) override_deployments_dir="${OPTARG}" ;;
-    N) override_wallet_name="${OPTARG}" ;;
-    w) override_wallet_path="${OPTARG}" ;;
-    p) override_wallet_password="${OPTARG}" ;;
-    s) override_wallet_seed="${OPTARG}" ;;
-    n) override_target_network="${OPTARG}" ;;
-    k) override_api_key="${OPTARG}" ;;
-    C) override_repo_dir="${OPTARG}" ;;
-    S) override_repo_origin="${OPTARG}" ;;
-    D) override_publishing_platform="${OPTARG}" ;;
-    P) override_target_publisher="${OPTARG}" ;;
-    M) override_target_price="${OPTARG}" ;;
-    m) override_measure_unit="${OPTARG}" ;;
-    U) override_target_uri="${OPTARG}" ;;
-    R) override_recipe_publish="${OPTARG}" ;;
-    L) override_package_list="${OPTARG}" ;;
-    H) override_gnupg_home="${OPTARG}" ;;
-    K) override_pgp_fingerprint="${OPTARG}" ;;
-    E) override_pgp_email="${OPTARG}" ;;
-    W) override_pub_dir="${OPTARG}" ;;
-    o) override_output_dir="${OPTARG}" ;;
-    O) override_target_platform="${OPTARG}" ;;
-    c) override_color="y" ;;
-    v) override_quiet="n" ;;
-    h|?) _set_overrides && \
-	 _usage \
-           0 ;;
-    *)
-    _msg_error \
-      "Invalid argument '${arg}'" \
-      0 && \
-    _set_overrides && \
-    _usage \
-      1
-    ;;
+    t) \
+      override_package_type="${OPTARG}" ;;
+    A) \
+      override_ur_address="${OPTARG}" ;;
+    V) \
+      override_ur_version="${OPTARG}" ;;
+    n) \
+      override_target_network="${OPTARG}" ;;
+    C) \
+      override_repo_dir="${OPTARG}" ;;
+    S) \
+      override_repo_origin="${OPTARG}" ;;
+    D) \
+      override_publishing_platform="${OPTARG}" ;;
+    P) \
+      override_target_publisher="${OPTARG}" ;;
+    M) \
+      override_target_price="${OPTARG}" ;;
+    m) \
+      override_measure_unit="${OPTARG}" ;;
+    g) \
+      override_price_currency="${OPTARG}" ;;
+    U) \
+      override_target_uri="${OPTARG}" ;;
+    R) \
+      override_recipe_publish="${OPTARG}" ;;
+    L) \
+      override_package_list="${OPTARG}" ;;
+    H) \
+      override_gnupg_home="${OPTARG}" ;;
+    K) \
+      override_pgp_fingerprint="${OPTARG}" ;;
+    E) \
+      override_pgp_email="${OPTARG}" ;;
+    W) \
+      override_pub_dir="${OPTARG}" ;;
+    o) \
+      override_output_dir="${OPTARG}" ;;
+    O) \
+      override_target_platform="${OPTARG}" ;;
+    c) \
+      override_color="y" ;;
+    v) \
+      override_quiet="n" ;;
+    h) \
+      _set_overrides && \
+      _usage \
+        0 ;;
+    *) \
+      if [[ " ${getopts_opts} " != *"${arg}"* ]]; then
+        _msg_error \
+          "Invalid argument '${arg}'." \
+          0
+        _usage \
+          1
+      fi ;;
   esac
 done
 shift \
@@ -1768,7 +1808,7 @@ shift \
     OPTIND - 1 \
   ))
 local_packages=(
-  $@
+  "$@"
 )
 _config_user_init \
   "${app_name}"
@@ -1795,6 +1835,7 @@ app_opts=(
   "${target_publisher}"
   "${target_price}"
   "${measure_unit}"
+  "${price_currency}"
   "${target_uri}"
   "${recipe_publish}"
   "${package_list}"

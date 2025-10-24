@@ -197,7 +197,7 @@ _fur_repo_clean() {
     _find_opts=() \
     _msg=()
   _msg=(
-    "looking for packages and signatures"
+    "Looking for packages and signatures"
     "in '${_dir}'."
   )
   _msg_info \
@@ -210,7 +210,7 @@ _fur_repo_clean() {
     -print0
   )
   _msg=(
-    "running find with options"
+    "Running find with options"
     "'${_find_opts[@]}'"
   )
   _msg_info \
@@ -254,7 +254,7 @@ _fur_get() {
   fi || \
     true
   _msg_info \
-    "running fur with ${_get_opts[*]}"
+    "Running fur with ${_get_opts[*]}"
   "${_get_cmd}" \
     "${_get_opts[@]}" \
     "${_pkg}" || \
@@ -290,7 +290,7 @@ _lur_binary_package_get() {
   fi || \
     true
   _msg_info \
-   "running lur with ${_get_opts[*]}"
+   "Running lur with ${_get_opts[*]}."
   "${_get_cmd}" \
       "${_get_opts[@]}" \
       "${_pkg}" || \
@@ -331,8 +331,8 @@ _pkgs_find() {
     -print0
   )
   _msg=(
-    "running find with options"
-    "'${_find_opts[@]}'"
+    "Running find with options"
+    "'${_find_opts[@]}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -646,7 +646,7 @@ _ur_publisher_check() {
       "Publisher '${_target_publisher}'"
       "is not registered on the User Repository."
       "Register it by running 'ur-publishers"
-      "register <target_publisher>'"
+      "register <target_publisher>'."
     )
     _msg_error \
       "${_msg[*]}" \
@@ -1268,7 +1268,7 @@ _key_latest_select() {
   _msg_info \
     "${_msg[*]}"
   _msg=(
-    "looking for own signatures"
+    "Looking for own signatures"
     "in '${_keyserver_receive_dir}'."
   )
   _msg_info \
@@ -1281,8 +1281,8 @@ _key_latest_select() {
     -print0
   )
   _msg=(
-    "running find with options"
-    "'${_find_opts[@]}'"
+    "Running find with options"
+    "'${_find_opts[@]}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -1301,7 +1301,7 @@ _key_latest_select() {
       sort \
         -V)
   )
-  if [[ "${_keys_sorted}" == "" ]]; then
+  if [[ "${_keys_sorted[*]}" == "" ]]; then
     _msg=(
       "No keys in '${_keyserver_receive_dir}',"
       "create a key with"

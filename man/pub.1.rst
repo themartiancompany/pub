@@ -21,17 +21,6 @@ the decentralized, distributed, uncensorable, undeletable
 user repository and application store of Life and DogeOS.
 
 
-
-Contract options
-=================
--A fs_address           Address of the EVM file system
-                        on the network.
--B ll_address           Address of the Length Lock contract
-                        on the network.
--V fs_version           Version of the target EVM file
-                        system.
-
-
 Options
 ============
 
@@ -87,6 +76,7 @@ LibEVM options
 -d deployments_dir      Contracts deployments directory.
 -n network              EVM network name (${_networks[*]}).
 
+
 Credentials options
 ====================
 
@@ -95,6 +85,15 @@ Credentials options
 -p wallet_password      Wallet password.
 -s wallet_seed          Wallet seed path.
 -k api_key              Etherscan-like service key.
+
+
+Application options
+=====================
+
+-h                      Display help.
+-c                      Enable color output
+-v                      Enable verbose output
+
 
 Environment variables
 =====================
@@ -109,7 +108,6 @@ Copyright Pellegrino Prevete. AGPL-3.0.
 See also
 ========
 
-* pub -h
 * ur
 
 .. include:: variables.rst

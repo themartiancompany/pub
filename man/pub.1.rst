@@ -90,9 +90,9 @@ LibEVM options
 Credentials options
 ====================
 
--N wallet_name>         Wallet name.
--w wallet_path>         Wallet path.
--p wallet_password>     Wallet password.
+-N wallet_name          Wallet name.
+-w wallet_path          Wallet path.
+-p wallet_password      Wallet password.
 -s wallet_seed          Wallet seed path.
 -k api_key              Etherscan-like service key.
 

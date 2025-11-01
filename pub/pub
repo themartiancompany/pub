@@ -378,7 +378,8 @@ _fur_sign() {
     "${_binary_repo_dir}"
   for _pkg in "${_pkgs[@]}"; do
     _msg=(
-      "signing package '${_pkg}'"
+      "Signing package '${_pkg}'"
+      "with gpg options '${_gpg_opts[@]}'."
     )
     _msg_info \
       "${_msg[*]}"
@@ -417,6 +418,11 @@ _ur_sign() {
     _msg=(
       "Source recipe repo"
       "contents:"
+    )
+    _msg_info \
+      "${_msg[*]}"
+    _msg=(
+      "Running gpg with options '${_gpg_opts[@]}."
     )
     _msg_info \
       "${_msg[*]}"
@@ -1461,9 +1467,13 @@ _set_overrides() {
     "${user_level}"
   _api_key_auto_detect \
     "${target_network}"
+  _set_override \
+    "wallet" \
+    "name" \
+    "default"
   _wallet_overrides_set \
     "evm-wallet" \
-    "default" \
+    "${wallet_name}" \
     "y"
   _set_override \
     "target" \

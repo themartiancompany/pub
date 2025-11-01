@@ -861,7 +861,7 @@ _ur_pub() {
         ether2wei \
           "${_target_price}")"
     fi
-    _publish_recipe_args=(
+    _publish_recipe_args+=(
       "${_package}"
       "${_target_publisher}"
     )
@@ -870,7 +870,7 @@ _ur_pub() {
         "${_target_currency}"
       )
     fi
-    _publish_recipe_args=(
+    _publish_recipe_args+=(
       "${_target_price}"
       "${_target_uri}"
     )

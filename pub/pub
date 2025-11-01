@@ -45,6 +45,9 @@ _requirements() {
   local \
     _zlib
   _check_cmd \
+    'ether2wei' \
+    'evm-wallet'
+  _check_cmd \
     'evm-contract-call' \
     'evm-contracts-tools'
   _check_cmd \
@@ -853,8 +856,8 @@ _ur_pub() {
     _msg_info \
       "${_msg[*]}"
     if [[ "${_measure_unit}" == "ether" ]]; then
-      _target_price="$( \
-        _ether_to_wei \
+      _target_price="$(
+        ether2wei \
           "${_target_price}")"
     fi
     evm-contract-call \

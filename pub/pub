@@ -106,7 +106,7 @@ _global_variables() {
   target_platform=""
   target_price=""
   measure_unit=""
-  price_currency=""
+  target_currency=""
   target_uri=""
   recipe_publish=""
   package_list=""
@@ -771,7 +771,7 @@ _ur_pub() {
     _target_publisher="${12}" \
     _target_price="${13}" \
     _measure_unit="${14}" \
-    _price_currency="${15}" \
+    _target_currency="${15}" \
     _target_uri="${16}" \
     _recipe_publish="${17}" \
     _package_list="${18}" \
@@ -842,7 +842,7 @@ _ur_pub() {
       "with URI '${_target_uri}' and"
       "price '${_target_price}'"
       "'${_measure_unit}' and currency"
-      "'${_price_currency}' on the Ur."
+      "'${_target_currency}' on the Ur."
     )
     _msg_info \
       "${_msg[*]}"
@@ -857,7 +857,7 @@ _ur_pub() {
       "publishRecipe" \
       "${_package}" \
       "${_target_publisher}" \
-      "${_price_currency}" \
+      "${_target_currency}" \
       "${_target_price}" \
       "${_target_uri}"
     _msg=(
@@ -1165,13 +1165,14 @@ _pub() {
     _target_publisher="${18}" \
     _target_price="${19}" \
     _measure_unit="${20}" \
-    _target_uri="${21}" \
-    _recipe_publish="${22}" \
-    _package_list="${23}" \
-    _gnupg_home="${24}" \
-    _key_fingerprint="${25}" \
-    _key_email="${26}" \
-    _platform="${27}" \
+    _target_currency="${21}" \
+    _target_uri="${22}" \
+    _recipe_publish="${23}" \
+    _package_list="${24}" \
+    _gnupg_home="${25}" \
+    _key_fingerprint="${26}" \
+    _key_email="${27}" \
+    _platform="${28}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
@@ -1184,7 +1185,7 @@ _pub() {
     _msg=() \
     _oldpwd
   shift \
-    27
+    28
   _packages=(
     "$@"
   )
@@ -1263,7 +1264,9 @@ _key_latest_select() {
   _msg=(
     "Selecting latest published"
     "publisher's wallet address key"
-    "retrieved from keyserver."
+    "retrieved from keyserver for"
+    "wallet '${wallet_name}' with"
+    "address '${wallet_address}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -1411,12 +1414,12 @@ _package_type_auto_detect() {
     "${_type}"
 }
 
-_price_currency_auto_detect() {
+_target_currency_auto_detect() {
   local \
     _address_null
   _address_null="0x0000000000000000000000000000000000000000"
   _set_override \
-    "price" \
+    "target" \
     "currency" \
     "${_address_null}"
 }
@@ -1473,7 +1476,7 @@ _set_overrides() {
     "measure" \
     "unit" \
     "ether"
-  _price_currency_auto_detect
+  _target_currency_auto_detect
   _set_override \
     "target" \
     "uri" \
@@ -1601,12 +1604,6 @@ $(_display_networks \
                                gur' and 'fur' and user's
                                wallet address for 'ur'.
                                Default: ${target_publisher}
-     -M <target_price>         Target price for the package.
-                               Default: ${target_price}
-     -m <measure_unit>         Measure unit for the network
-                               currency. It can be 'ether'
-                               and 'wei'.
-                               Default: ${measure_unit}
      -U <target_uri>           To manually specify the signed
                                package recipe archive evmfs URI
                                and skip upload.
@@ -1616,18 +1613,33 @@ $(_display_networks \
                                Default: ${recipe_publish}
      -L <y/n>                  Whether to list package
                                for user search. Requires to
-			       be a registered Ur publisher.
+                               be a registered Ur publisher.
                                Default: ${package_list}
-     -H <gnupg_home>           GNUPG home directory.
-                               Default: ${gnupg_home}
-     -K <fingerprint>          OpenPG signature key.
-                               Default: ${pgp_fingerprint}
-     -E <email_like_id>        OpenPG signature email.
-                               Default: ${pgp_email}
      -O <computing_platform>   Life or DogeOS base platform for
                                which the binary package is built
                                ('arch', 'termux').
                                Default: ${target_platform}
+
+  signing options:
+     -H <gnupg_home>           GNUPG home directory.
+                               Default: ${gnupg_home}
+     -K <fingerprint>          OpenPG signature key.
+                               Default: ${pgp_fingerprint}
+     -E <evm-gpg-id>           OpenPG signature email in the format
+                               <name>@<address>.
+                               Default: ${pgp_email}
+
+  selling options:
+     -m <measure_unit>         Measure unit for the network
+                               currency. It can be 'ether'
+                               and 'wei'.
+                               Default: ${target_currency}
+     -M <target_price>         Target price for the package.
+                               Default: ${target_price}
+     -m <measure_unit>         Measure unit for the network
+                               currency. It can be 'ether'
+                               and 'wei'.
+                               Default: ${measure_unit}
 
   contract options:
      -A <ur_address>           Address of the 'User Repository'

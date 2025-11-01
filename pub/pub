@@ -792,7 +792,8 @@ _ur_pub() {
     _ur_abi \
     _ur_bytecode \
     _ur_compiler_output \
-    _publish_call_opts=()
+    _publish_call_opts=() \
+    _publish_recipe_args=()
   _msg=(
     "Publishing package '${_package}'"
     "on the Ur."
@@ -860,15 +861,24 @@ _ur_pub() {
         ether2wei \
           "${_target_price}")"
     fi
+    _publish_recipe_args=(
+      "${_package}"
+      "${_target_publisher}"
+    )
+    if [[ "${_ur_version}" == "1.1" ]]; then
+      _publish_recipe_args+=(
+        "${_target_currency}"
+      )
+    fi
+    _publish_recipe_args=(
+      "${_target_price}"
+      "${_target_uri}"
+    )
     evm-contract-call \
       "${_publish_call_opts[@]}" \
       "${_ur_address}" \
       "publishRecipe" \
-      "${_package}" \
-      "${_target_publisher}" \
-      "${_target_currency}" \
-      "${_target_price}" \
-      "${_target_uri}"
+      "${_publish_recipe_args[@]}"
     _msg=(
       "Package '${_package}' correctly published."
     )

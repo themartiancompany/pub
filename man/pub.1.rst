@@ -32,27 +32,40 @@ Options
                         It's 'themartiancompany' for
                         gur' and 'fur' and user's
                         wallet address for 'ur'.
+-R <y/n>                If set to 'y', it will skip
+                        recipe publishing.
+-U target_uri           To manually specify the signed
+                        package recipe archive evmfs URI
+                        and skip upload.
+-L <y/n>                Whether to list package
+                        for user search. Requires to
+                        be a registered Ur publisher.
+-O computing_platform   Life or DogeOS base platform for
+                        which the binary package is built
+                        ('arch', 'termux').
+
+
+Signing options
+===================
+
+-H gnupg_home           GNUPG home directory.
+-K fingerprint          OpenPG signature key.
+-E email_like_id        OpenPG signature email.
+
+
+Selling options
+===================
+
 -M target_price         Target price for the package.
 -m measure_unit         Measure unit for the network
                         currency. It can be 'ether'
                         and 'wei'.
 -g price_currency       Address of the \*RC-20 token
                         the application is being sold
-                        for.
--R <y/n>                If set to 'y', it will skip
-                        recipe publishing.
--U target_uri           To manually specify the signed
-                        package recipe archive evmfs URI
-                        and skip upload.
--L y_or_n               Whether to list package
-                        for user search. Requires to
-                        be a registered Ur publisher.
--H gnupg_home           GNUPG home directory.
--K fingerprint          OpenPG signature key.
--E email_like_id        OpenPG signature email.
--O computing_platform   Life or DogeOS base platform for
-                        which the binary package is built
-                        ('arch', 'termux').
+                        for. Defaults to network gas,
+                        so dollars for the default
+                        network.
+
 
 Contract options
 =================

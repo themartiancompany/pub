@@ -1630,9 +1630,10 @@ $(_display_networks \
                                Default: ${pgp_email}
 
   selling options:
-     -g <currency-address>     Measure unit for the network
-                               currency. It can be 'ether'
-                               and 'wei'.
+     -g <currency-address>     Target currency address for package
+                               revision selling.
+                               If not set defaults to network gas,
+                               so dollars for the default network.
                                Default: ${target_currency}
      -M <target-price>         Target price for the package.
                                Default: ${target_price}
@@ -1847,7 +1848,7 @@ app_opts=(
   "${target_publisher}"
   "${target_price}"
   "${measure_unit}"
-  "${price_currency}"
+  "${target_currency}"
   "${target_uri}"
   "${recipe_publish}"
   "${package_list}"

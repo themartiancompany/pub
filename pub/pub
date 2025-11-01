@@ -998,6 +998,7 @@ _pub_opts_setup() {
       "${_target_publisher}"
       "${_target_price}"
       "${_measure_unit}"
+      "${_target_currency}"
       "${_target_uri}"
       "${_recipe_publish}"
       "${_package_list}"

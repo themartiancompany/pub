@@ -1592,19 +1592,19 @@ $(_display_networks \
      "${_networks[@]}")
 
   options:
-     -W <repo_dir>             Repo directory.
+     -W <repo-dir>             Repo directory.
                                Default: ${repo_dir}
      -S <origin>               Repo origin.
                                Default: ${repo_origin}
-     -D <publishing_platform>  Publishing platform.
+     -D <publishing-platform>  Publishing platform.
                                It can be 'ur', 'gur', 'fur'.
                                Default: ${publishing_platform}
-     -P <target_publisher>     Target publisher.
+     -P <target-publisher>     Target publisher.
                                It's 'themartiancompany' for
                                gur' and 'fur' and user's
                                wallet address for 'ur'.
                                Default: ${target_publisher}
-     -U <target_uri>           To manually specify the signed
+     -U <target-uri>           To manually specify the signed
                                package recipe archive evmfs URI
                                and skip upload.
                                Default: ${target_uri}
@@ -1615,13 +1615,13 @@ $(_display_networks \
                                for user search. Requires to
                                be a registered Ur publisher.
                                Default: ${package_list}
-     -O <computing_platform>   Life or DogeOS base platform for
+     -O <computing-platform>   Life or DogeOS base platform for
                                which the binary package is built
                                ('arch', 'termux').
                                Default: ${target_platform}
 
   signing options:
-     -H <gnupg_home>           GNUPG home directory.
+     -H <gnupg-home>           GNUPG home directory.
                                Default: ${gnupg_home}
      -K <fingerprint>          OpenPG signature key.
                                Default: ${pgp_fingerprint}
@@ -1630,29 +1630,29 @@ $(_display_networks \
                                Default: ${pgp_email}
 
   selling options:
-     -m <measure_unit>         Measure unit for the network
+     -g <currency-address>     Measure unit for the network
                                currency. It can be 'ether'
                                and 'wei'.
                                Default: ${target_currency}
-     -M <target_price>         Target price for the package.
+     -M <target-price>         Target price for the package.
                                Default: ${target_price}
-     -m <measure_unit>         Measure unit for the network
+     -m <measure-unit>         Measure unit for the network
                                currency. It can be 'ether'
                                and 'wei'.
                                Default: ${measure_unit}
 
   contract options:
-     -A <ur_address>           Address of the 'User Repository'
+     -A <ur-address>           Address of the 'User Repository'
                                contract on the network.
                                Default: ${ur_address}
-     -B <up_address>           Address of the 'User Repository
+     -B <up-address>           Address of the 'User Repository
                                Publishers' contract on the
                                network.
                                Default: ${up_address}
-     -C <pp_address>           Address of the 'Package Publishers'
+     -C <pp-address>           Address of the 'Package Publishers'
                                contract on the network.
                                Default: ${pp_address}
-     -V <ur_version>           Version of the target 'User Repository
+     -V <ur-version>           Version of the target 'User Repository
                                Publishers' contract.
                                Default: ${ur_version}
 
@@ -1661,25 +1661,25 @@ $(_display_networks \
                                address from user directory or custom
                                deployment.
                                Default: ${user_level}
-     -d <deployments_dir>      Contracts deployments directory.
+     -d <deployments-dir>      Contracts deployments directory.
                                Default: ${deployments_dir}
      -n <network>              EVM network name (${_networks[*]}).
                                Default: ${target_network}
 
   credentials options:
-     -N <wallet_name>          Wallet name.
+     -N <wallet-name>          Wallet name.
                                Default: ${wallet_name}
-     -w <wallet_path>          Wallet path.
+     -w <wallet-path>          Wallet path.
                                Default: ${wallet_path}
-     -p <wallet_password>      Wallet password.
+     -p <wallet-password>      Wallet password.
                                Default: ${wallet_password}
-     -s <wallet_seed>          Wallet seed path.
+     -s <wallet-seed>          Wallet seed path.
                                Default: ${wallet_seed}
-     -k <api_key>              Etherscan-like service key.
+     -k <api-key>              Etherscan-like service key.
                                Default: ${api_key}
 
   unused options:
-     -o <output_dir>           Output directory.
+     -o <output-dir>           Output directory.
                                Default: ${output_dir}
 
      -c                        Colors.
@@ -1778,7 +1778,7 @@ while \
     m) \
       override_measure_unit="${OPTARG}" ;;
     g) \
-      override_price_currency="${OPTARG}" ;;
+      override_target_currency="${OPTARG}" ;;
     U) \
       override_target_uri="${OPTARG}" ;;
     R) \

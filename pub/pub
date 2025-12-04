@@ -21,13 +21,12 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-_bin="$( \
+_bin="$(
   dirname \
-    "$( \
-      command \
+    "$(command \
         -v \
 	  "env")")"
-_lib="$( \
+_lib="$(
   realpath \
     "${_bin}/../lib")"
 _crash_bash="${_lib}/libcrash-bash/crash-bash"
@@ -73,7 +72,7 @@ _requirements() {
     'rsync'
   _check_cmd \
     'tar'
-  _zlib="$( \
+  _zlib="$(
     find \
       "$(_get_lib)/libz."* \
       -type \
@@ -145,7 +144,7 @@ _get_arch() {
     _filename_array=() \
     _string \
     _arch
-  _filename="$( \
+  _filename="$(
     basename \
       "${_pkg}")"
   IFS="-" \
@@ -239,7 +238,7 @@ _fur_get() {
    _dir="${1}" \
    _platform="${2}" \
    _oldpwd
-  _oldpwd="$( \
+  _oldpwd="$(
     pwd)"
   cd \
     "${_dir}"
@@ -275,7 +274,7 @@ _lur_binary_package_get() {
     _dir="${1}" \
     _platform="${2}" \
    _oldpwd
-  _oldpwd="$( \
+  _oldpwd="$(
     pwd)"
   cd \
     "${_dir}"
@@ -300,7 +299,7 @@ _lur_binary_package_get() {
   "${_get_cmd}" \
       "${_get_opts[@]}" \
       "${_pub}"
-  _binary_pkgs=( $( \
+  _binary_pkgs=( $(
     find \
       "${_binary_packages_tmp_dir}" \
       -iname \
@@ -359,8 +358,7 @@ _fur_sign() {
     _pkg \
     _gpg_opts=() \
     _msg=()
-  _oldpwd="$( \
-    pwd)"
+  _oldpwd="${PWD}"
   _gpg_opts+=(
     --local-user
       "${_fingerprint}"
@@ -525,7 +523,7 @@ _ur_upload() {
   )
   _msg_info \
     "${_msg[*]}"
-  _target_uri="$( \
+  _target_uri="$(
     evmfs \
       "${_evmfs_uri_opts[@]}" \
       publish \
@@ -644,7 +642,7 @@ _ur_publisher_check() {
     "${_up_abi}" \
     "${_up_bytecode}" \
     "${_up_compiler_output}"
-  _listed="$( \
+  _listed="$(
     evm-contract-call \
       "${_publisher_check_call_opts[@]}" \
       "${_up_address}" \
@@ -701,7 +699,7 @@ _ur_package_publisher_list() {
     "${_pp_abi}" \
     "${_pp_bytecode}" \
     "${_pp_compiler_output}"
-  _listed="$( \
+  _listed="$(
     evm-contract-call \
       "${_unlisted_check_call_opts[@]}" \
       "${_pp_address}" \
@@ -919,8 +917,7 @@ _fur_pub() {
   _msg_info \
     "${_msg[*]}"
   _signature_detached="y"
-  _oldpwd="$( \
-    pwd)"
+  _oldpwd="${PWD}"
   _msg_info \
    "Add ${_publisher}"
    "remote in repo '${_dir}/${_pub}'"
@@ -953,7 +950,7 @@ _fur_pub() {
     in "${_packages[@]}"; do
     _msg_info \
       "publishing package: ${_package}" 
-    _arch="$( \
+    _arch="$(
       _get_arch \
         "${_package}")"
     _package_dir="${_platform}/${_arch}"
@@ -1043,7 +1040,7 @@ _repo_dir_setup() {
     _msg=() \
     _tmp_dir
   _tmp_dir="${_cache_dir}/repo"
-  _repo_dir="$( \
+  _repo_dir="$(
     mktemp \
       -d \
       -p \
@@ -1067,7 +1064,7 @@ _binary_packages_tmp_dir_setup() {
     _msg=() \
     _tmp_dir
   _tmp_dir="${_cache_dir}/binaries"
-  _binary_packages_tmp_dir="$( \
+  _binary_packages_tmp_dir="$(
     mktemp \
       -u \
       -d \
@@ -1093,7 +1090,7 @@ _pub_repo_setup() {
     _msg=() \
     _tmp_dir
   _tmp_dir="${_cache_dir}/publish"
-  _pub_repo="$( \
+  _pub_repo="$(
     mktemp \
       -u \
       -d \
@@ -1119,7 +1116,7 @@ _source_tmp_dir_setup() {
     _msg=() \
     _tmp_dir
   _tmp_dir="${_cache_dir}/source"
-  _source_tmp_dir="$( \
+  _source_tmp_dir="$(
     mktemp \
       -u \
       -d \
@@ -1209,8 +1206,7 @@ _pub() {
   _packages=(
     "$@"
   )
-  _oldpwd="$( \
-    pwd)"
+  _oldpwd="${PWD}"
   if [[ "${_package_type}" == "source" && \
         "${_publishing_platform}" == "fur" ]]; then
     _msg=(
@@ -1233,7 +1229,7 @@ _pub() {
     _pub_repo_setup
     if [[ "${_package_type}" == "binary" ]]; then
       _binary_packages_tmp_dir_setup
-      _binary_packages_tmp_dir="$( \
+      _binary_packages_tmp_dir="$(
         mktemp \
           -d)"
       "_${_origin}_binary_package_get" \
@@ -1317,7 +1313,7 @@ _key_latest_select() {
         "${_keyserver_receive_dir}" \
 	"${_find_opts[@]}" 2>/dev/null || \
       true)
-  _keys_sorted=( $( \
+  _keys_sorted=( $(
     printf \
       "%s\n" \
       "${_keys[@]}" | \
@@ -1340,7 +1336,7 @@ _key_latest_select() {
   fi
   _msg_info \
     "selecting key '${_keys_sorted[-1]}'"
-  _fingerprint="$( \
+  _fingerprint="$(
     gpg-key-info \
       -o \
         "fingerprint" \
@@ -1355,7 +1351,7 @@ _key_git_select() {
   )
   _msg_info \
     "${_msg[*]}"
-  _fingerprint="$( \
+  _fingerprint="$(
     git \
       config \
         --list | \
@@ -1387,7 +1383,7 @@ _pgp_email_auto_detect() {
   if [[ "${publishing_platform}" == "ur" ]]; then
     _email=""
   elif [[ "${publishing_platform}" == "fur" ]]; then
-    _email="$( \
+    _email="$(
       git \
         config \
           --list | \
@@ -1408,7 +1404,7 @@ _platform_auto_detect() {
   local \
     _platform="arch" \
     _os
-  _os="$( \
+  _os="$(
     uname \
       -o)"
   if [[ "${_os}" == "Android" ]] || \
@@ -1590,7 +1586,7 @@ _usage() {
     _usage_text
   _ur="UserRepository"
   _ur_deployment="${deployments_dir}/${_ur}"
-  _networks=( $( \
+  _networks=( $(
     evm-contract-deployment-networks \
       -A \
       "${_ur_deployment}")
@@ -1765,7 +1761,7 @@ _libevm_global_variables
 _libevm_app_global_variables
 _requirements
 # shellcheck disable=SC2004
-getopts_opts="$( \
+getopts_opts="$(
   printf \
     "%s" \
     "t:C:S:D:P:M:m:g:U:R:L:K:E:o:O:" \
@@ -1782,51 +1778,51 @@ while \
   _libevm_app_getopts_case
   case \
     "${arg}" in
-    t) \
+    t)
       override_package_type="${OPTARG}" ;;
-    A) \
+    A)
       override_ur_address="${OPTARG}" ;;
-    V) \
+    V)
       override_ur_version="${OPTARG}" ;;
-    n) \
+    n)
       override_target_network="${OPTARG}" ;;
-    C) \
+    C)
       override_repo_dir="${OPTARG}" ;;
-    S) \
+    S)
       override_repo_origin="${OPTARG}" ;;
-    D) \
+    D)
       override_publishing_platform="${OPTARG}" ;;
-    P) \
+    P)
       override_target_publisher="${OPTARG}" ;;
-    M) \
+    M)
       override_target_price="${OPTARG}" ;;
-    m) \
+    m)
       override_measure_unit="${OPTARG}" ;;
-    g) \
+    g)
       override_target_currency="${OPTARG}" ;;
-    U) \
+    U)
       override_target_uri="${OPTARG}" ;;
-    R) \
+    R)
       override_recipe_publish="${OPTARG}" ;;
-    L) \
+    L)
       override_package_list="${OPTARG}" ;;
-    H) \
+    H)
       override_gnupg_home="${OPTARG}" ;;
-    K) \
+    K)
       override_pgp_fingerprint="${OPTARG}" ;;
-    E) \
+    E)
       override_pgp_email="${OPTARG}" ;;
-    W) \
+    W)
       override_pub_dir="${OPTARG}" ;;
-    o) \
+    o)
       override_output_dir="${OPTARG}" ;;
-    O) \
+    O)
       override_target_platform="${OPTARG}" ;;
-    c) \
+    c)
       override_color="y" ;;
-    v) \
+    v)
       override_quiet="n" ;;
-    h) \
+    h)
       _set_overrides && \
       _usage \
         0 ;;

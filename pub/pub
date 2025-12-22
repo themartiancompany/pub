@@ -1220,12 +1220,18 @@ _pub() {
   if [[ "${_repo_dir}" == "" ]]; then
     _repo_dir_setup
   fi
-  _msg_info \
+  _msg=(
     "Packages: ${_packages[*]}."
+  )
+  _msg_info \
+    "${_msg[*]}"
   for _pkg \
     in "${_packages[@]}"; do
-    _msg_info \
+    _msg=(
       "Package '${_pkg}'."
+    )
+    _msg_info \
+      "${_msg[*]}"
     _pub_repo_setup
     if [[ "${_package_type}" == "binary" ]]; then
       _binary_packages_tmp_dir_setup
@@ -1236,18 +1242,17 @@ _pub() {
         "${_repo_dir}" \
         "${_platform}" || \
         echo \
-         "no get function for ${_origin}"
+         "No get function for ${_origin}."
       _get_opts=()
       "_${_publishing_platform}_get" \
         "${_pub_repo}" \
         "${_platform}" || \
-        echo "hi"
     elif [[ "${_package_type}" == "source" ]]; then
       if [[ "${_origin}" == "lur" ]]; then
         if [[ ! -d "${_repo_dir}/lur/${_pkg}" ]]; then
           _msg=(
-            "found no sources for package"
-            "'${_pkg}' in repo '${_repo_dir}/lur'"
+            "Found no sources for package"
+            "'${_pkg}' in repo '${_repo_dir}/lur'."
           )
           _msg_error \
             "${_msg[*]}" \

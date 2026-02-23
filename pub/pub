@@ -495,6 +495,8 @@ _ur_upload() {
         "${_api_key_path}"
       -m
         "bulk"
+      -T
+        "${_call_timeout}"
     )
   else
     _evmfs_opts+=(
@@ -544,6 +546,8 @@ _contract_call_opts_setup() {
       "${_bytecode}"
     -C
       "${_compiler_output}"
+    -T
+      "${_call_timeout}"
   )
 }
 
@@ -699,6 +703,15 @@ _ur_package_publisher_list() {
     "${_pp_abi}" \
     "${_pp_bytecode}" \
     "${_pp_compiler_output}"
+  evm-contract-call \
+    -v \
+    "${_unlisted_check_call_opts[@]}" \
+    "${_pp_address}" \
+    "packagePublisherListed" \
+    "${_ur_address}" \
+    "${_up_address}" \
+    "${_package}" \
+    "${_target_publisher}"
   _listed="$(
     evm-contract-call \
       "${_unlisted_check_call_opts[@]}" \
@@ -1159,6 +1172,22 @@ _source_prepare() {
   fi
 }
 
+_package_type_check() {
+  local \
+    _package_type="${1}" \
+    _publishing_platform="${2}"
+  if [[ "${_package_type}" == "source" && \
+        "${_publishing_platform}" == "fur" ]]; then
+    _msg=(
+      "The fur is a binary package publishing"
+      "platform."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+}
+
 # $@: packages
 _pub() {
   local \
@@ -1174,22 +1203,23 @@ _pub() {
     _wallet_seed="${10}" \
     _target_network="${11}" \
     _api_key_path="${12}" \
-    _cache_dir="${13}" \
-    _output_dir="${14}" \
-    _repo_dir="${15}" \
-    _origin="${16}" \
-    _publishing_platform="${17}" \
-    _target_publisher="${18}" \
-    _target_price="${19}" \
-    _measure_unit="${20}" \
-    _target_currency="${21}" \
-    _target_uri="${22}" \
-    _recipe_publish="${23}" \
-    _package_list="${24}" \
-    _gnupg_home="${25}" \
-    _key_fingerprint="${26}" \
-    _key_email="${27}" \
-    _platform="${28}" \
+    _call_timeout="${13}" \
+    _cache_dir="${14}" \
+    _output_dir="${15}" \
+    _repo_dir="${16}" \
+    _origin="${17}" \
+    _publishing_platform="${18}" \
+    _target_publisher="${19}" \
+    _target_price="${20}" \
+    _measure_unit="${21}" \
+    _target_currency="${22}" \
+    _target_uri="${23}" \
+    _recipe_publish="${24}" \
+    _package_list="${25}" \
+    _gnupg_home="${26}" \
+    _key_fingerprint="${27}" \
+    _key_email="${28}" \
+    _platform="${29}" \
     _packages=() \
     _pkgs=() \
     _get_opts=() \
@@ -1202,21 +1232,14 @@ _pub() {
     _msg=() \
     _oldpwd
   shift \
-    28
+    29
   _packages=(
     "$@"
   )
   _oldpwd="${PWD}"
-  if [[ "${_package_type}" == "source" && \
-        "${_publishing_platform}" == "fur" ]]; then
-    _msg=(
-      "The fur is a binary package publishing"
-      "platform."
-    )
-    _msg_error \
-      "${_msg[*]}" \
-      1
-  fi
+  _package_type_check \
+    "${_package_type}" \
+    "${_publishing_platform}"
   if [[ "${_repo_dir}" == "" ]]; then
     _repo_dir_setup
   fi
@@ -1235,9 +1258,9 @@ _pub() {
     _pub_repo_setup
     if [[ "${_package_type}" == "binary" ]]; then
       _binary_packages_tmp_dir_setup
-      _binary_packages_tmp_dir="$(
-        mktemp \
-          -d)"
+      # _binary_packages_tmp_dir="$(
+      #   mktemp \
+      #     -d)"
       "_${_origin}_binary_package_get" \
         "${_repo_dir}" \
         "${_platform}" || \
@@ -1247,6 +1270,8 @@ _pub() {
       "_${_publishing_platform}_get" \
         "${_pub_repo}" \
         "${_platform}" || \
+        echo \
+         "No get function for ${_publishing_platform}."
     elif [[ "${_package_type}" == "source" ]]; then
       if [[ "${_origin}" == "lur" ]]; then
         if [[ ! -d "${_repo_dir}/lur/${_pkg}" ]]; then
@@ -1579,6 +1604,10 @@ _set_overrides() {
     _msg_info \
       "${_msg[*]}"
   fi
+  _set_override \
+    "call" \
+    "timeout" \
+    "600000"
 }
 
 # Show help usage, with an exit status.
@@ -1748,6 +1777,7 @@ _show_config() {
   _msg_info "                 User level:   ${user_level}"
   _msg_info "      Deployments directory:   ${deployments_dir}"
   _msg_info "             Target network:   ${target_network}"
+  _msg_info "               Call timeout:   ${call_timeout}"
   _msg_info "Credentials configuration:"
   _msg_info "             Wallet address:   ${wallet_address}"
   _msg_info "                Wallet name:   ${wallet_name}"
@@ -1769,7 +1799,7 @@ _requirements
 getopts_opts="$(
   printf \
     "%s" \
-    "t:C:S:D:P:M:m:g:U:R:L:K:E:o:O:" \
+    "t:C:S:D:P:M:m:g:U:R:L:K:E:o:O:T:" \
     "A:V:" \
     "$(_libevm_app_getopts_params_get)" \
     "n:" \
@@ -1811,6 +1841,8 @@ while \
       override_recipe_publish="${OPTARG}" ;;
     L)
       override_package_list="${OPTARG}" ;;
+    T)
+      override_call_timeout="${OPTARG}" ;;
     H)
       override_gnupg_home="${OPTARG}" ;;
     K)
@@ -1828,13 +1860,16 @@ while \
     v)
       override_quiet="n" ;;
     h)
-      _set_overrides && \
+      _set_overrides
       _usage \
         0 ;;
-    *) \
+    *)
       if [[ " ${getopts_opts} " != *"${arg}"* ]]; then
+        _msg=(
+          "Invalid argument '${arg}'."
+        )
         _msg_error \
-          "Invalid argument '${arg}'." \
+          "${_msg[*]}" \
           0
         _usage \
           1
@@ -1865,6 +1900,7 @@ app_opts=(
   "${wallet_seed}"
   "${target_network}"
   "${api_key}"
+  "${call_timeout}"
   "${cache_dir}"
   "${output_dir}"
   "${repo_dir}"
